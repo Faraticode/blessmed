@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — BlessMed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-top: 20px; }
+  .stat-card h3 { font-size: 30px; margin-bottom: 2px; }
+  .stat-card span { font-size: 13px; color: var(--text-muted); }
+  .quick-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 14px; }
+  .quick-link { display: block; padding: 18px; }
+  .quick-link strong { display: block; color: var(--navy); margin-bottom: 4px; }
+  .quick-link p { margin: 0; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1 id="welcome-heading">Welcome back</h1>
+      <p>Here's a quick look at your health record.</p>
+    </div>
+
+    <div class="grid">
+      <div class="card stat-card">
+        <h3 id="stat-records">—</h3>
+        <span>Health records saved</span>
+      </div>
+      <div class="card stat-card">
+        <h3 id="stat-profile">—</h3>
+        <span>Health profile status</span>
+      </div>
+      <div class="card stat-card">
+        <h3 id="stat-tips">—</h3>
+        <span>New health tips</span>
+      </div>
+    </div>
+
+    <div id="pulse-container"></div>
+
+    <h2>Quick actions</h2>
+    <div class="quick-links">
+      <a class="card quick-link" href="profile.html">
+        <strong>Update health profile</strong>
+        <p>Blood group, genotype, allergies, and emergency contact.</p>
+      </a>
+      <a class="card quick-link" href="records.html">
+        <strong>Upload a record</strong>
+        <p>Add a prescription, lab result, or vaccination card.</p>
+      </a>
+      <a class="card quick-link" href="emergency.html">
+        <strong>View emergency QR</strong>
+        <p>Share essential info quickly in an emergency.</p>
+      </a>
+      <a class="card quick-link" href="tips.html">
+        <strong>Read health tips</strong>
+        <p>Nutrition, exercise, and mental wellness tips.</p>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  Auth.requireLogin();
+  renderSidebar('dashboard');
+  insertPulseDivider('pulse-container');
+
+  const user = Auth.getUser();
+  document.getElementById('welcome-heading').textContent = `Welcome back, ${user.fullName.split(' ')[0]}`;
+
+  async function loadStats() {
+    try {
+      const records = await apiRequest('/records');
+      document.getElementById('stat-records').textContent = records.length;
+    } catch { document.getElementById('stat-records').textContent = '0'; }
+
+    try {
+      await apiRequest('/profile');
+      document.getElementById('stat-profile').textContent = 'Complete';
+    } catch {
+      document.getElementById('stat-profile').textContent = 'Not set up';
+    }
+
+    try {
+      const tips = await apiRequest('/tips');
+      document.getElementById('stat-tips').textContent = tips.length;
+    } catch { document.getElementById('stat-tips').textContent = '0'; }
+  }
+
+  loadStats();
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Health Tips — BlessMed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  .filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-chip {
+    padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer;
+  }
+  .filter-chip.active { background: var(--gradient-brand); color: #fff; border-color: transparent; }
+  .tip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .tip-card .tip-category {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--teal); margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Health Tips</h1>
+      <p>Small, steady habits — nutrition, movement, and mental wellness.</p>
+    </div>
+
+    <div class="filter-row" id="filter-row">
+      <button class="filter-chip active" data-category="">All</button>
+      <button class="filter-chip" data-category="general">General</button>
+      <button class="filter-chip" data-category="nutrition">Nutrition</button>
+      <button class="filter-chip" data-category="exercise">Exercise</button>
+      <button class="filter-chip" data-category="mental_wellness">Mental Wellness</button>
+    </div>
+
+    <div id="alert-box"></div>
+    <div class="tip-grid" id="tip-grid"></div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  Auth.requireLogin();
+  renderSidebar('tips');
+
+  const categoryLabels = {
+    general: 'General', nutrition: 'Nutrition', exercise: 'Exercise', mental_wellness: 'Mental Wellness'
+  };
+
+  async function loadTips(category = '') {
+    const grid = document.getElementById('tip-grid');
+    try {
+      const query = category ? `?category=${category}` : '';
+      const tips = await apiRequest(`/tips${query}`);
+
+      if (tips.length === 0) {
+        grid.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align:center; padding: 40px;">No tips in this category yet.</div>`;
+        return;
+      }
+
+      grid.innerHTML = tips.map(t => `
+        <div class="card tip-card">
+          <span class="tip-category">${categoryLabels[t.category] || t.category}</span>
+          <h3>${t.title}</h3>
+          <p>${t.body}</p>
+        </div>
+      `).join('');
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  }
+
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      loadTips(chip.dataset.category);
+    });
+  });
+
+  loadTips();
+</script>
+</body>
+</html>

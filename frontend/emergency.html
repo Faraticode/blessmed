@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Emergency QR — BlessMed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  .qr-layout { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; margin-top: 20px; }
+  .qr-image-card { text-align: center; flex-shrink: 0; }
+  .qr-image-card img { width: 260px; height: 260px; border-radius: var(--radius-sm); }
+  .qr-info-card { flex: 1; min-width: 260px; }
+  .qr-info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .qr-info-row:last-child { border-bottom: none; }
+  .qr-info-row span:first-child { color: var(--text-muted); }
+  .qr-info-row span:last-child { font-weight: 600; color: var(--navy); }
+  .banner-coral {
+    background: var(--coral-soft); color: var(--coral); border-radius: var(--radius-sm);
+    padding: 12px 16px; font-size: 13px; margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Emergency QR Code</h1>
+      <p>A quick way for someone to see the essentials if you're unable to explain them yourself.</p>
+    </div>
+
+    <div class="banner-coral">This QR code only shares what's below — nothing else from your account.</div>
+
+    <div id="alert-box"></div>
+
+    <div id="qr-content"></div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  Auth.requireLogin();
+  renderSidebar('emergency');
+
+  async function loadQr() {
+    const container = document.getElementById('qr-content');
+    try {
+      const { qrCode, data } = await apiRequest('/emergency/qrcode');
+
+      container.innerHTML = `
+        <div class="qr-layout">
+          <div class="card qr-image-card">
+            <img src="${qrCode}" alt="Emergency QR code" />
+            <div style="margin-top:12px;">
+              <a class="btn btn-secondary" href="${qrCode}" download="blessmed-emergency-qr.png">Download</a>
+            </div>
+          </div>
+          <div class="card qr-info-card">
+            <h3>What's shared</h3>
+            <div class="qr-info-row"><span>Name</span><span>${data.name}</span></div>
+            <div class="qr-info-row"><span>Blood group</span><span>${data.bloodGroup}</span></div>
+            <div class="qr-info-row"><span>Allergies</span><span>${(data.allergies || []).join(', ') || 'None listed'}</span></div>
+            <div class="qr-info-row"><span>Emergency contact</span><span>${data.emergencyContact?.name || '—'}</span></div>
+            <div class="qr-info-row"><span>Contact phone</span><span>${data.emergencyContact?.phone || '—'}</span></div>
+          </div>
+        </div>
+      `;
+    } catch (err) {
+      container.innerHTML = `
+        <div class="card empty-state" style="text-align:center; padding: 40px;">
+          <p>${err.message}</p>
+          <a class="btn btn-primary" href="profile.html">Set up health profile</a>
+        </div>
+      `;
+    }
+  }
+
+  loadQr();
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign up — BlessMed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/auth.css" />
+</head>
+<body>
+
+<div class="auth-shell">
+  <div class="auth-hero">
+    <svg class="network-texture" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#ffffff" stroke-width="1" fill="#ffffff">
+        <circle cx="60" cy="80" r="3"/><circle cx="140" cy="40" r="2"/><circle cx="220" cy="100" r="3"/>
+        <circle cx="90" cy="180" r="2"/><circle cx="180" cy="220" r="3"/><circle cx="300" cy="60" r="2"/>
+        <circle cx="380" cy="140" r="3"/><circle cx="420" cy="260" r="2"/><circle cx="320" cy="320" r="3"/>
+        <circle cx="240" cy="380" r="2"/><circle cx="120" cy="340" r="3"/><circle cx="60" cy="420" r="2"/>
+        <line x1="60" y1="80" x2="140" y2="40" stroke-width="0.6"/>
+        <line x1="140" y1="40" x2="220" y2="100" stroke-width="0.6"/>
+        <line x1="60" y1="80" x2="90" y2="180" stroke-width="0.6"/>
+        <line x1="90" y1="180" x2="180" y2="220" stroke-width="0.6"/>
+        <line x1="220" y1="100" x2="300" y2="60" stroke-width="0.6"/>
+        <line x1="300" y1="60" x2="380" y2="140" stroke-width="0.6"/>
+        <line x1="380" y1="140" x2="420" y2="260" stroke-width="0.6"/>
+        <line x1="420" y1="260" x2="320" y2="320" stroke-width="0.6"/>
+        <line x1="320" y1="320" x2="240" y2="380" stroke-width="0.6"/>
+        <line x1="240" y1="380" x2="120" y2="340" stroke-width="0.6"/>
+        <line x1="120" y1="340" x2="60" y2="420" stroke-width="0.6"/>
+        <line x1="180" y1="220" x2="320" y2="320" stroke-width="0.6"/>
+      </g>
+    </svg>
+    <div class="auth-hero-content">
+      <img src="assets/logo.jpg" alt="BlessMed logo" />
+      <h1>Your health, decentralized.</h1>
+      <p>Create your account to start building a health record that's secure, portable, and truly yours.</p>
+      <div class="auth-tagline">Secure &middot; Decentralized &middot; Empowering &middot; Rewarding</div>
+    </div>
+  </div>
+
+  <div class="auth-panel">
+    <div class="auth-form-wrap">
+      <h2>Create your account</h2>
+      <p>It only takes a minute to get started.</p>
+
+      <div id="alert-box"></div>
+
+      <form id="signup-form">
+        <div class="field">
+          <label for="fullName">Full name</label>
+          <input type="text" id="fullName" required autocomplete="name" />
+        </div>
+        <div class="field">
+          <label for="email">Email address</label>
+          <input type="email" id="email" required autocomplete="email" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" required minlength="6" autocomplete="new-password" />
+          <div class="field-hint">At least 6 characters.</div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Create account</button>
+      </form>
+
+      <div class="auth-switch">
+        Already have an account? <a href="login.html">Log in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script>
+  if (Auth.isLoggedIn()) window.location.href = 'dashboard.html';
+
+  document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearAlert('alert-box');
+
+    const fullName = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    try {
+      const data = await apiRequest('/auth/signup', { method: 'POST', body: { fullName, email, password } });
+      Auth.setSession(data.token, data.user);
+      window.location.href = 'dashboard.html';
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  });
+</script>
+</body>
+</html>

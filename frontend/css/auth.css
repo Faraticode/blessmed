@@ -1,0 +1,57 @@
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+}
+
+.auth-hero {
+  flex: 1;
+  background: var(--gradient-brand);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-hero-content { position: relative; z-index: 2; max-width: 420px; }
+.auth-hero-content img { width: 56px; margin-bottom: 24px; border-radius: 12px; background: #fff; padding: 4px; }
+.auth-hero-content h1 { color: #fff; font-size: 30px; margin-bottom: 14px; }
+.auth-hero-content p { color: rgba(255,255,255,0.82); font-size: 15px; }
+.auth-tagline {
+  margin-top: 40px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mint);
+}
+
+/* Decentralized network dot texture, echoing the logo mark */
+.network-texture {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0.35;
+}
+
+.auth-panel {
+  width: 460px;
+  flex-shrink: 0;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.auth-form-wrap { width: 100%; max-width: 340px; }
+.auth-form-wrap h2 { font-size: 24px; }
+.auth-form-wrap > p { margin-bottom: 26px; }
+.auth-switch { text-align: center; margin-top: 18px; font-size: 14px; color: var(--text-muted); }
+
+@media (max-width: 900px) {
+  .auth-hero { display: none; }
+  .auth-panel { width: 100%; }
+}

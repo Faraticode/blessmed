@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Health Profile — BlessMed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  .form-actions { display: flex; gap: 12px; margin-top: 22px; }
+  .tag-input-hint { font-size: 12px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Health Profile</h1>
+      <p>This information helps others act quickly and correctly if you ever need care.</p>
+    </div>
+
+    <div id="alert-box"></div>
+
+    <div class="card">
+      <form id="profile-form">
+        <div class="field-row">
+          <div class="field">
+            <label for="name">Full name</label>
+            <input type="text" id="name" required />
+          </div>
+          <div class="field">
+            <label for="age">Age</label>
+            <input type="number" id="age" min="0" required />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="bloodGroup">Blood group</label>
+            <select id="bloodGroup">
+              <option>Unknown</option>
+              <option>A+</option><option>A-</option>
+              <option>B+</option><option>B-</option>
+              <option>AB+</option><option>AB-</option>
+              <option>O+</option><option>O-</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="genotype">Genotype</label>
+            <select id="genotype">
+              <option>Unknown</option>
+              <option>AA</option><option>AS</option><option>SS</option>
+              <option>AC</option><option>SC</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="allergies">Allergies</label>
+          <input type="text" id="allergies" placeholder="Penicillin, Peanuts, Latex" />
+          <div class="tag-input-hint">Separate multiple entries with a comma.</div>
+        </div>
+
+        <div class="field">
+          <label for="existingConditions">Existing medical conditions</label>
+          <input type="text" id="existingConditions" placeholder="Asthma, Hypertension" />
+          <div class="tag-input-hint">Separate multiple entries with a comma.</div>
+        </div>
+
+        <h3 style="margin-top: 26px;">Emergency contact</h3>
+        <div class="field-row">
+          <div class="field">
+            <label for="contactName">Name</label>
+            <input type="text" id="contactName" />
+          </div>
+          <div class="field">
+            <label for="contactRelationship">Relationship</label>
+            <input type="text" id="contactRelationship" placeholder="Spouse, Parent, Sibling" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="contactPhone">Phone number</label>
+          <input type="tel" id="contactPhone" />
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="save-btn">Save profile</button>
+          <button type="button" class="btn btn-danger" id="delete-btn" style="display:none;">Delete profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  Auth.requireLogin();
+  renderSidebar('profile');
+
+  let profileExists = false;
+
+  function toList(str) {
+    return str.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  function fillForm(profile) {
+    document.getElementById('name').value = profile.name || '';
+    document.getElementById('age').value = profile.age ?? '';
+    document.getElementById('bloodGroup').value = profile.bloodGroup || 'Unknown';
+    document.getElementById('genotype').value = profile.genotype || 'Unknown';
+    document.getElementById('allergies').value = (profile.allergies || []).join(', ');
+    document.getElementById('existingConditions').value = (profile.existingConditions || []).join(', ');
+    document.getElementById('contactName').value = profile.emergencyContact?.name || '';
+    document.getElementById('contactRelationship').value = profile.emergencyContact?.relationship || '';
+    document.getElementById('contactPhone').value = profile.emergencyContact?.phone || '';
+  }
+
+  async function loadProfile() {
+    try {
+      const profile = await apiRequest('/profile');
+      fillForm(profile);
+      profileExists = true;
+      document.getElementById('save-btn').textContent = 'Update profile';
+      document.getElementById('delete-btn').style.display = 'inline-flex';
+    } catch {
+      profileExists = false;
+    }
+  }
+
+  function buildPayload() {
+    return {
+      name: document.getElementById('name').value.trim(),
+      age: Number(document.getElementById('age').value),
+      bloodGroup: document.getElementById('bloodGroup').value,
+      genotype: document.getElementById('genotype').value,
+      allergies: toList(document.getElementById('allergies').value),
+      existingConditions: toList(document.getElementById('existingConditions').value),
+      emergencyContact: {
+        name: document.getElementById('contactName').value.trim(),
+        relationship: document.getElementById('contactRelationship').value.trim(),
+        phone: document.getElementById('contactPhone').value.trim()
+      }
+    };
+  }
+
+  document.getElementById('profile-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearAlert('alert-box');
+    const payload = buildPayload();
+
+    try {
+      if (profileExists) {
+        await apiRequest('/profile', { method: 'PUT', body: payload });
+        showAlert('alert-box', 'Profile updated.', 'success');
+      } else {
+        await apiRequest('/profile', { method: 'POST', body: payload });
+        showAlert('alert-box', 'Profile created.', 'success');
+        profileExists = true;
+        document.getElementById('save-btn').textContent = 'Update profile';
+        document.getElementById('delete-btn').style.display = 'inline-flex';
+      }
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  });
+
+  document.getElementById('delete-btn').addEventListener('click', async () => {
+    if (!confirm('Delete your health profile? This cannot be undone.')) return;
+    try {
+      await apiRequest('/profile', { method: 'DELETE' });
+      document.getElementById('profile-form').reset();
+      profileExists = false;
+      document.getElementById('save-btn').textContent = 'Save profile';
+      document.getElementById('delete-btn').style.display = 'none';
+      showAlert('alert-box', 'Profile deleted.', 'success');
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  });
+
+  loadProfile();
+</script>
+</body>
+</html>

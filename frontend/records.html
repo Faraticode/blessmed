@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Health Records — BlessMed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  .upload-toggle { margin-bottom: 18px; }
+  .record-list { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+  .record-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px;
+  }
+  .record-info strong { display: block; color: var(--navy); }
+  .record-info span { font-size: 13px; color: var(--text-muted); }
+  .record-type-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 3px 9px; border-radius: 20px; background: #E7F7F5; color: var(--teal);
+    margin-bottom: 4px; text-transform: capitalize;
+  }
+  .record-actions { display: flex; gap: 8px; }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Health Records</h1>
+      <p>Prescriptions, lab results, and vaccination cards, all in one place.</p>
+    </div>
+
+    <div id="alert-box"></div>
+
+    <button class="btn btn-primary upload-toggle" id="show-upload-btn">Upload a record</button>
+
+    <div class="card" id="upload-card" style="display:none;">
+      <h3>Upload a new record</h3>
+      <form id="upload-form">
+        <div class="field-row">
+          <div class="field">
+            <label for="recordType">Record type</label>
+            <select id="recordType" required>
+              <option value="prescription">Prescription</option>
+              <option value="lab_result">Lab result</option>
+              <option value="vaccination_card">Vaccination card</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="recordDate">Date</label>
+            <input type="date" id="recordDate" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="title">Title</label>
+          <input type="text" id="title" placeholder="e.g. Malaria treatment - March" required />
+        </div>
+        <div class="field">
+          <label for="notes">Notes (optional)</label>
+          <textarea id="notes" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label for="file">File</label>
+          <input type="file" id="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required />
+          <div class="field-hint">PDF, JPG, PNG, or WEBP. Max 10MB.</div>
+        </div>
+        <div style="display:flex; gap:12px;">
+          <button type="submit" class="btn btn-primary">Save record</button>
+          <button type="button" class="btn btn-secondary" id="cancel-upload-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="pulse-container"></div>
+
+    <div class="record-list" id="record-list"></div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  Auth.requireLogin();
+  renderSidebar('records');
+  insertPulseDivider('pulse-container');
+
+  const typeLabels = {
+    prescription: 'Prescription',
+    lab_result: 'Lab result',
+    vaccination_card: 'Vaccination card',
+    other: 'Other'
+  };
+
+  document.getElementById('show-upload-btn').addEventListener('click', () => {
+    document.getElementById('upload-card').style.display = 'block';
+    document.getElementById('show-upload-btn').style.display = 'none';
+  });
+  document.getElementById('cancel-upload-btn').addEventListener('click', () => {
+    document.getElementById('upload-card').style.display = 'none';
+    document.getElementById('show-upload-btn').style.display = 'inline-flex';
+    document.getElementById('upload-form').reset();
+  });
+
+  async function loadRecords() {
+    const list = document.getElementById('record-list');
+    try {
+      const records = await apiRequest('/records');
+      if (records.length === 0) {
+        list.innerHTML = `<div class="card empty-state">No health records yet. Upload your first one above.</div>`;
+        return;
+      }
+      list.innerHTML = records.map(r => `
+        <div class="card record-row" data-id="${r._id}">
+          <div class="record-info">
+            <span class="record-type-badge">${typeLabels[r.recordType] || r.recordType}</span>
+            <strong>${r.title}</strong>
+            <span>${formatDate(r.recordDate)} &middot; ${r.fileName}</span>
+          </div>
+          <div class="record-actions">
+            <a class="btn btn-icon" href="/uploads/${r.filePath}" target="_blank" title="View file">View</a>
+            <button class="btn btn-icon delete-record-btn" title="Delete">Delete</button>
+          </div>
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.delete-record-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.closest('.record-row').dataset.id;
+          if (!confirm('Delete this record?')) return;
+          try {
+            await apiRequest(`/records/${id}`, { method: 'DELETE' });
+            loadRecords();
+          } catch (err) {
+            showAlert('alert-box', err.message);
+          }
+        });
+      });
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  }
+
+  document.getElementById('upload-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearAlert('alert-box');
+
+    const formData = new FormData();
+    formData.append('recordType', document.getElementById('recordType').value);
+    formData.append('title', document.getElementById('title').value.trim());
+    formData.append('notes', document.getElementById('notes').value.trim());
+    formData.append('recordDate', document.getElementById('recordDate').value);
+    formData.append('file', document.getElementById('file').files[0]);
+
+    try {
+      await apiRequest('/records', { method: 'POST', body: formData, isFormData: true });
+      document.getElementById('upload-form').reset();
+      document.getElementById('upload-card').style.display = 'none';
+      document.getElementById('show-upload-btn').style.display = 'inline-flex';
+      showAlert('alert-box', 'Record uploaded.', 'success');
+      loadRecords();
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  });
+
+  loadRecords();
+</script>
+</body>
+</html>
