@@ -27,13 +27,15 @@ function renderSidebar(activePage) {
         <img src="assets/logo.jpg" alt="BlessMed logo" />
         <span>BlessMed</span>
       </div>
-      <nav>${navHtml}</nav>
+      <nav class="nav-list">${navHtml}</nav>
       <div class="sidebar-footer">
         <div class="sidebar-user">${user ? user.fullName : ''}</div>
         <button class="btn btn-secondary btn-block" id="logout-btn">Log out</button>
+        <button class="logout-btn-mobile" id="logout-btn-mobile" aria-label="Log out" title="Log out">Log out</button>
       </div>
     </div>
   `;
 
   document.getElementById('logout-btn').addEventListener('click', () => Auth.logout());
+  document.getElementById('logout-btn-mobile').addEventListener('click', () => Auth.logout());
 }
