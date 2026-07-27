@@ -235,11 +235,13 @@ textarea:focus-visible, a:focus-visible {
 @media (max-width: 820px) {
   .app-shell { flex-direction: column; min-height: auto; }
 
-  /* Sidebar becomes a sticky top bar: brand+logout on one row,
+  /* Sidebar becomes a sticky top bar: brand+logout share one row,
      a horizontally scrollable nav row underneath. */
   .sidebar {
     width: 100%;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
     padding: 12px 16px;
     position: sticky;
     top: 0;
@@ -248,11 +250,17 @@ textarea:focus-visible, a:focus-visible {
 
   .sidebar-brand {
     order: 1;
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
     border: none;
     margin: 0;
-    padding: 0 0 10px 0;
-    justify-content: space-between;
+    padding: 0;
+  }
+  .sidebar-brand span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .nav-list {
@@ -263,7 +271,7 @@ textarea:focus-visible, a:focus-visible {
     -webkit-overflow-scrolling: touch;
     gap: 4px;
     padding-top: 10px;
-    margin-top: 4px;
+    margin-top: 10px;
     border-top: 1px solid rgba(255,255,255,0.15);
   }
   .nav-item {
@@ -272,17 +280,14 @@ textarea:focus-visible, a:focus-visible {
     margin-bottom: 0;
   }
 
-  /* Footer sits inline with the brand row on mobile; only the
-     compact logout button shows, the desktop block button and
-     name are hidden to save space. */
+  /* Logout sits next to the brand on the same row, its own flex
+     item — no overlap, no absolute positioning. */
   .sidebar-footer {
     order: 2;
-    margin-top: 0;
-    padding-top: 0;
+    flex-shrink: 0;
+    margin: 0 0 0 12px;
+    padding: 0;
     border-top: none;
-    position: absolute;
-    top: 12px;
-    right: 16px;
   }
   .sidebar-user { display: none; }
   .sidebar-footer .btn-block { display: none; }
