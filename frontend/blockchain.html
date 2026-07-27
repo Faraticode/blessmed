@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Blockchain — BlessMed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=3" />
+<style>
+  .wallet-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .wallet-address {
+    font-family: monospace; font-size: 13px; background: #EEF4F7; color: var(--navy);
+    padding: 8px 12px; border-radius: var(--radius-sm); word-break: break-all;
+  }
+  .section-gap { margin-top: 24px; }
+  .points-display { font-size: 42px; font-family: var(--font-display); color: var(--navy); }
+  .tx-link { font-size: 13px; margin-top: 10px; display: inline-block; }
+  .verify-result { margin-top: 14px; padding: 12px 16px; border-radius: var(--radius-sm); font-size: 14px; }
+  .verify-found { background: #E7F7EF; color: var(--success); }
+  .verify-missing { background: var(--coral-soft); color: var(--coral); }
+  .testnet-badge {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    background: #FFF3CD; color: #8A6D1D; padding: 3px 10px; border-radius: 20px; margin-left: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Blockchain <span class="testnet-badge">Testnet demo</span></h1>
+      <p>Connect a Stacks wallet to verify record integrity on-chain and earn reward points for healthy habits.</p>
+    </div>
+
+    <div id="alert-box"></div>
+
+    <div class="card wallet-bar">
+      <div id="wallet-status">
+        <strong id="wallet-label">No wallet connected</strong>
+        <div id="wallet-address-display"></div>
+      </div>
+      <button class="btn btn-primary" id="connect-btn">Connect Wallet</button>
+    </div>
+
+    <div id="connected-sections" style="display:none;">
+
+      <div class="card section-gap">
+        <h3>Reward points</h3>
+        <p>Earn points on-chain for healthy actions like reading a tip or logging a record. This is a demo mechanic — points are self-reported by your wallet.</p>
+        <div class="points-display" id="points-display">—</div>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+          <button class="btn btn-secondary" id="refresh-points-btn">Refresh points</button>
+          <button class="btn btn-primary" id="earn-points-btn">+1 point for a healthy action</button>
+        </div>
+        <div id="points-tx-result"></div>
+      </div>
+
+      <div class="card section-gap">
+        <h3>Verify a health record</h3>
+        <p>Upload a file to compute its fingerprint (SHA-256 hash) and store it on-chain — this proves the exact file existed at this time, without putting the file itself on the blockchain.</p>
+        <div class="field">
+          <label for="record-file">File to register</label>
+          <input type="file" id="record-file" />
+        </div>
+        <button class="btn btn-primary" id="store-hash-btn">Store hash on-chain</button>
+        <div id="store-hash-result"></div>
+      </div>
+
+      <div class="card section-gap">
+        <h3>Check if a file was registered</h3>
+        <p>Upload a file to see if its hash has already been stored on-chain, and by whom.</p>
+        <div class="field">
+          <label for="verify-file">File to check</label>
+          <input type="file" id="verify-file" />
+        </div>
+        <button class="btn btn-secondary" id="verify-btn">Check on-chain</button>
+        <div id="verify-result"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js?v=3"></script>
+<script src="js/ui.js?v=3"></script>
+<script src="js/nav.js?v=3"></script>
+<script>
+  Auth.requireLogin();
+  renderSidebar('blockchain');
+</script>
+
+<script type="module">
+  import './js/stacks.js';
+</script>
+<script type="module">
+  // Give the Stacks module a moment to attach window.Stacks, then wire up the UI.
+  function whenStacksReady(callback) {
+    if (window.Stacks) return callback();
+    const interval = setInterval(() => {
+      if (window.Stacks) { clearInterval(interval); callback(); }
+    }, 100);
+  }
+
+  whenStacksReady(() => {
+    const { Stacks } = window;
+
+    function updateWalletUI() {
+      const address = Stacks.getAddress();
+      const connectedSections = document.getElementById('connected-sections');
+      const label = document.getElementById('wallet-label');
+      const addrDisplay = document.getElementById('wallet-address-display');
+      const connectBtn = document.getElementById('connect-btn');
+
+      if (address) {
+        label.textContent = 'Wallet connected';
+        addrDisplay.innerHTML = `<span class="wallet-address">${address}</span>`;
+        connectBtn.textContent = 'Disconnect';
+        connectedSections.style.display = 'block';
+        refreshPoints();
+      } else {
+        label.textContent = 'No wallet connected';
+        addrDisplay.innerHTML = '';
+        connectBtn.textContent = 'Connect Wallet';
+        connectedSections.style.display = 'none';
+      }
+    }
+
+    async function refreshPoints() {
+      const address = Stacks.getAddress();
+      if (!address) return;
+      const display = document.getElementById('points-display');
+      display.textContent = '…';
+      try {
+        const result = await Stacks.getPoints(address);
+        display.textContent = result.points ?? '0';
+      } catch (err) {
+        display.textContent = '—';
+        showAlert('alert-box', `Could not read points from chain: ${err.message}`);
+      }
+    }
+
+    document.getElementById('connect-btn').addEventListener('click', async () => {
+      clearAlert('alert-box');
+      try {
+        if (Stacks.isConnected()) {
+          Stacks.disconnectWallet();
+          updateWalletUI();
+        } else {
+          const address = await Stacks.connectWallet();
+          updateWalletUI();
+          if (address) {
+            try {
+              await apiRequest('/auth/wallet', { method: 'PUT', body: { walletAddress: address } });
+            } catch {
+              // Non-critical — the wallet still works for on-chain actions
+              // even if linking it to the account fails.
+            }
+          }
+        }
+      } catch (err) {
+        showAlert('alert-box', err.message);
+      }
+    });
+
+    document.getElementById('refresh-points-btn').addEventListener('click', refreshPoints);
+
+    document.getElementById('earn-points-btn').addEventListener('click', async () => {
+      const resultBox = document.getElementById('points-tx-result');
+      resultBox.innerHTML = '';
+      try {
+        const { txid } = await Stacks.earnPoints(1);
+        resultBox.innerHTML = `<a class="tx-link" href="https://explorer.hiro.so/txid/${txid}?chain=testnet" target="_blank">Transaction submitted — view on explorer</a>`;
+      } catch (err) {
+        showAlert('alert-box', err.message);
+      }
+    });
+
+    document.getElementById('store-hash-btn').addEventListener('click', async () => {
+      const resultBox = document.getElementById('store-hash-result');
+      resultBox.innerHTML = '';
+      const file = document.getElementById('record-file').files[0];
+      if (!file) return showAlert('alert-box', 'Choose a file first.');
+
+      try {
+        const hexHash = await Stacks.hashFile(file);
+        const { txid } = await Stacks.storeRecordHash(hexHash);
+        resultBox.innerHTML = `
+          <div class="verify-result verify-found">
+            Hash <code>${hexHash.slice(0, 16)}…</code> submitted.
+            <a class="tx-link" href="https://explorer.hiro.so/txid/${txid}?chain=testnet" target="_blank">View transaction</a>
+          </div>`;
+      } catch (err) {
+        showAlert('alert-box', err.message);
+      }
+    });
+
+    document.getElementById('verify-btn').addEventListener('click', async () => {
+      const resultBox = document.getElementById('verify-result');
+      resultBox.innerHTML = '';
+      const file = document.getElementById('verify-file').files[0];
+      if (!file) return showAlert('alert-box', 'Choose a file first.');
+
+      try {
+        const hexHash = await Stacks.hashFile(file);
+        const record = await Stacks.getRecord(hexHash);
+        if (record && record.value) {
+          resultBox.innerHTML = `
+            <div class="verify-result verify-found">
+              Registered on-chain by <strong>${record.value.owner.value}</strong>
+              at block ${record.value['registered-at'].value}.
+            </div>`;
+        } else {
+          resultBox.innerHTML = `<div class="verify-result verify-missing">This exact file has not been registered on-chain.</div>`;
+        }
+      } catch (err) {
+        showAlert('alert-box', err.message);
+      }
+    });
+
+    updateWalletUI();
+  });
+</script>
+</body>
+</html>

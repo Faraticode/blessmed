@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const requireAuth = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -66,6 +67,26 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Something went wrong while logging in.', error: err.message });
+  }
+});
+
+// PUT /api/auth/wallet - link a connected Stacks wallet address to this account
+router.put('/wallet', requireAuth, async (req, res) => {
+  try {
+    const { walletAddress } = req.body;
+    if (!walletAddress) {
+      return res.status(400).json({ message: 'Wallet address is required.' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { walletAddress },
+      { new: true }
+    );
+
+    res.json({ message: 'Wallet linked to your account.', walletAddress: user.walletAddress });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not link your wallet.', error: err.message });
   }
 });
 
