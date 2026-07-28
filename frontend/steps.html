@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Steps — BlessMed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=4" />
+<link rel="stylesheet" href="css/chain.css?v=1" />
+<style>
+  .today-steps-display { font-size: 52px; font-family: var(--font-display); font-weight: 700; color: var(--chain-text); }
+  .today-steps-display span { font-size: 18px; color: var(--chain-text-muted); font-weight: 500; }
+  .history-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .history-row { display: flex; justify-content: space-between; padding: 10px 14px; border-radius: var(--radius-sm); background: #0F0A18; border: 1px solid var(--chain-border); font-size: 14px; }
+  .history-row span:first-child { color: var(--chain-text-muted); }
+  .history-row span:last-child { color: var(--chain-text); font-weight: 600; }
+  .chain-alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 14px; margin-bottom: 16px; background: rgba(232, 96, 76, 0.15); color: #F4948A; }
+  .chain-success { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 14px; margin-bottom: 16px; background: rgba(46, 158, 107, 0.15); color: #6BE0A6; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+
+  <div class="main-content chain-zone">
+    <div class="page-header">
+      <h1>Steps <span class="chain-badge">Testnet demo</span></h1>
+      <p>Log your daily steps and hit milestones to earn on-chain points — visit <a href="blockchain.html" style="color:var(--chain-purple-light);">Blockchain</a> first to connect your wallet.</p>
+    </div>
+
+    <div id="alert-box"></div>
+
+    <div class="chain-card">
+      <h3>Today</h3>
+      <div class="today-steps-display" id="today-steps">0 <span>steps</span></div>
+
+      <div class="step-input-row" style="margin-top:18px;">
+        <div class="chain-field">
+          <label for="steps-input">Update today's step count</label>
+          <input type="number" id="steps-input" min="0" placeholder="e.g. 8500" />
+        </div>
+        <button class="chain-btn-primary" id="save-steps-btn">Save</button>
+      </div>
+    </div>
+
+    <div class="chain-card section-gap">
+      <h3>Milestones</h3>
+      <p>Reach a new daily step milestone to unlock on-chain points. Only the highest milestone reached each day can be claimed, once.</p>
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill" style="width:0%;"></div></div>
+      <div class="milestone-track" id="milestone-track"></div>
+      <button class="chain-btn-primary" id="claim-btn" style="display:none; margin-top:14px;" onclick="claimMilestone()">Claim points on-chain</button>
+      <div id="claim-result"></div>
+    </div>
+
+    <div class="chain-card section-gap">
+      <h3>History</h3>
+      <div class="history-list" id="history-list"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js?v=3"></script>
+<script src="js/ui.js?v=3"></script>
+<script src="js/nav.js?v=4"></script>
+<script>
+  Auth.requireLogin();
+  renderSidebar('steps');
+</script>
+
+<script type="module">
+  import './js/stacks.js?v=3';
+</script>
+<script type="module">
+  function whenStacksReady(callback) {
+    if (window.Stacks) return callback();
+    const interval = setInterval(() => { if (window.Stacks) { clearInterval(interval); callback(); } }, 100);
+  }
+
+  let todayData = null;
+
+  function renderMilestones(data) {
+    const track = document.getElementById('milestone-track');
+    const maxSteps = data.milestones[data.milestones.length - 1].steps;
+    document.getElementById('progress-fill').style.width = `${Math.min(100, (data.steps / maxSteps) * 100)}%`;
+    document.getElementById('claim-btn').style.display = data.claimable ? 'inline-flex' : 'none';
+
+    track.innerHTML = data.milestones.map(m => {
+      const reached = data.steps >= m.steps;
+      const claimed = data.claimedMilestone >= m.points;
+      return `
+        <div class="milestone-row ${reached ? 'reached' : ''} ${claimed ? 'claimed' : ''}">
+          <div class="milestone-icon">${claimed ? '✓' : reached ? '★' : '○'}</div>
+          <div class="milestone-body">
+            <strong>${m.steps.toLocaleString()} steps</strong>
+            <span>${claimed ? 'Claimed' : reached ? 'Reached — ready to claim' : 'Not yet reached'}</span>
+          </div>
+          <div class="milestone-points">+${m.points} pts</div>
+        </div>`;
+    }).join('');
+  }
+
+  async function loadToday() {
+    try {
+      todayData = await apiRequest('/steps/today');
+      document.getElementById('today-steps').innerHTML = `${todayData.steps.toLocaleString()} <span>steps</span>`;
+      document.getElementById('steps-input').value = todayData.steps || '';
+      renderMilestones(todayData);
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  }
+
+  async function loadHistory() {
+    try {
+      const logs = await apiRequest('/steps');
+      const list = document.getElementById('history-list');
+      if (logs.length === 0) {
+        list.innerHTML = `<div class="history-row"><span>No steps logged yet.</span><span></span></div>`;
+        return;
+      }
+      list.innerHTML = logs.slice(0, 14).map(l => `
+        <div class="history-row"><span>${l.date}</span><span>${l.steps.toLocaleString()} steps</span></div>
+      `).join('');
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  }
+
+  document.getElementById('save-steps-btn').addEventListener('click', async () => {
+    clearAlert('alert-box');
+    const steps = Number(document.getElementById('steps-input').value);
+    if (isNaN(steps) || steps < 0) return showAlert('alert-box', 'Enter a valid step count.');
+
+    try {
+      await apiRequest('/steps', { method: 'POST', body: { steps } });
+      await loadToday();
+      await loadHistory();
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  });
+
+  loadToday();
+  loadHistory();
+
+  // Wire up the claim button once a wallet is available.
+  whenStacksReady(() => {
+    const { Stacks } = window;
+
+    window.claimMilestone = async function () {
+      const resultBox = document.getElementById('claim-result');
+      resultBox.innerHTML = '';
+
+      if (!Stacks.isConnected()) {
+        resultBox.innerHTML = `<div class="chain-alert">Connect your wallet on the Blockchain page first.</div>`;
+        return;
+      }
+      if (!todayData || !todayData.claimable) {
+        resultBox.innerHTML = `<div class="chain-alert">No new milestone to claim yet.</div>`;
+        return;
+      }
+
+      try {
+        const pointsToAward = todayData.currentMilestonePoints - todayData.claimedMilestone;
+        const { txid } = await Stacks.earnPoints(pointsToAward);
+        await apiRequest('/steps/claim', { method: 'PUT' });
+        resultBox.innerHTML = `<div class="chain-success">Claimed +${pointsToAward} points! <a class="tx-link" href="https://explorer.hiro.so/txid/${txid}?chain=testnet" target="_blank" style="color:#6BE0A6;">View transaction</a></div>`;
+        await loadToday();
+      } catch (err) {
+        resultBox.innerHTML = `<div class="chain-alert">${err.message}</div>`;
+      }
+    };
+  });
+</script>
+</body>
+</html>

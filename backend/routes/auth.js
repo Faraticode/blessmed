@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const requireAuth = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ router.post('/signup', async (req, res) => {
     res.status(201).json({
       message: 'Account created successfully.',
       token,
-      user: { id: user._id, fullName: user.fullName, email: user.email }
+      user: { id: user._id, fullName: user.fullName, email: user.email, avatarPath: user.avatarPath }
     });
   } catch (err) {
     res.status(500).json({ message: 'Something went wrong while creating your account.', error: err.message });
@@ -63,7 +64,7 @@ router.post('/login', async (req, res) => {
     res.json({
       message: 'Logged in successfully.',
       token,
-      user: { id: user._id, fullName: user.fullName, email: user.email }
+      user: { id: user._id, fullName: user.fullName, email: user.email, avatarPath: user.avatarPath }
     });
   } catch (err) {
     res.status(500).json({ message: 'Something went wrong while logging in.', error: err.message });
@@ -87,6 +88,23 @@ router.put('/wallet', requireAuth, async (req, res) => {
     res.json({ message: 'Wallet linked to your account.', walletAddress: user.walletAddress });
   } catch (err) {
     res.status(500).json({ message: 'Could not link your wallet.', error: err.message });
+  }
+});
+
+// POST /api/auth/avatar - upload/replace a profile picture
+router.post('/avatar', requireAuth, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please attach an image (JPG, PNG, or WEBP).' });
+    }
+    const user = await User.findByIdAndUpdate(
+      req.userId,
+      { avatarPath: req.file.filename },
+      { new: true }
+    );
+    res.json({ message: 'Profile picture updated.', avatarPath: user.avatarPath });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not upload your profile picture.', error: err.message });
   }
 });
 

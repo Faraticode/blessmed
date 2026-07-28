@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reminders — BlessMed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=4" />
+<style>
+  .reminder-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; gap: 12px; }
+  .reminder-time { font-family: monospace; font-weight: 700; color: var(--teal); font-size: 15px; min-width: 60px; }
+  .reminder-info { flex: 1; }
+  .reminder-info strong { display: block; color: var(--navy); }
+  .reminder-info span { font-size: 13px; color: var(--text-muted); }
+  .reminder-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .suggestion-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border: 1px dashed var(--border); border-radius: var(--radius-sm); background: #F9FBFC; }
+  .empty-state { text-align: center; padding: 30px 20px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="sidebar-root"></div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Reminders</h1>
+      <p>AI-suggested reminders based on your health profile, plus your own. Reminders fire while this page is open in your browser.</p>
+    </div>
+
+    <div id="alert-box"></div>
+
+    <div class="card">
+      <h3>AI suggestions</h3>
+      <p>Generates a few general wellness reminders based on your health profile — not medical advice, and never names specific medications.</p>
+      <button class="btn btn-primary" id="generate-btn">Generate suggestions</button>
+      <div class="reminder-list" id="suggestions-list"></div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h3>Add a reminder manually</h3>
+      <div class="field-row">
+        <div class="field">
+          <label for="new-title">Title</label>
+          <input type="text" id="new-title" placeholder="e.g. Drink water" />
+        </div>
+        <div class="field">
+          <label for="new-time">Time</label>
+          <input type="time" id="new-time" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="new-message">Note (optional)</label>
+        <input type="text" id="new-message" placeholder="e.g. Aim for a full glass" />
+      </div>
+      <button class="btn btn-secondary" id="add-reminder-btn">Add reminder</button>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h3>Your reminders</h3>
+      <div class="reminder-list" id="reminders-list"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js?v=3"></script>
+<script src="js/ui.js?v=3"></script>
+<script src="js/nav.js?v=4"></script>
+<script>
+  Auth.requireLogin();
+  renderSidebar('reminders');
+
+  async function loadReminders() {
+    const list = document.getElementById('reminders-list');
+    try {
+      const reminders = await apiRequest('/reminders');
+      if (reminders.length === 0) {
+        list.innerHTML = `<div class="empty-state">No reminders yet.</div>`;
+        return;
+      }
+      list.innerHTML = reminders.map(r => `
+        <div class="card reminder-row" data-id="${r._id}">
+          <span class="reminder-time">${r.time}</span>
+          <div class="reminder-info">
+            <strong>${r.title}</strong>
+            <span>${r.message || ''}${r.source === 'ai' ? ' · AI suggested' : ''}</span>
+          </div>
+          <button class="btn btn-icon delete-reminder-btn" title="Delete">Delete</button>
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.delete-reminder-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.closest('.reminder-row').dataset.id;
+          try {
+            await apiRequest(`/reminders/${id}`, { method: 'DELETE' });
+            loadReminders();
+          } catch (err) {
+            showAlert('alert-box', err.message);
+          }
+        });
+      });
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  }
+
+  document.getElementById('generate-btn').addEventListener('click', async () => {
+    clearAlert('alert-box');
+    const btn = document.getElementById('generate-btn');
+    btn.disabled = true;
+    btn.textContent = 'Generating…';
+    try {
+      const { suggestions } = await apiRequest('/reminders/generate', { method: 'POST' });
+      const list = document.getElementById('suggestions-list');
+      list.innerHTML = suggestions.map((s, i) => `
+        <div class="suggestion-row" data-index="${i}">
+          <div class="reminder-info">
+            <strong>${s.time} — ${s.title}</strong>
+            <span>${s.message || ''}</span>
+          </div>
+          <button class="btn btn-secondary accept-suggestion-btn">Add</button>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('.accept-suggestion-btn').forEach(acceptBtn => {
+        acceptBtn.addEventListener('click', async (e) => {
+          const row = e.target.closest('.suggestion-row');
+          const s = suggestions[row.dataset.index];
+          try {
+            await apiRequest('/reminders', { method: 'POST', body: { title: s.title, message: s.message, time: s.time } });
+            row.remove();
+            loadReminders();
+          } catch (err) {
+            showAlert('alert-box', err.message);
+          }
+        });
+      });
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Generate suggestions';
+    }
+  });
+
+  document.getElementById('add-reminder-btn').addEventListener('click', async () => {
+    clearAlert('alert-box');
+    const title = document.getElementById('new-title').value.trim();
+    const time = document.getElementById('new-time').value;
+    const message = document.getElementById('new-message').value.trim();
+    if (!title || !time) return showAlert('alert-box', 'A title and time are required.');
+
+    try {
+      await apiRequest('/reminders', { method: 'POST', body: { title, message, time } });
+      document.getElementById('new-title').value = '';
+      document.getElementById('new-time').value = '';
+      document.getElementById('new-message').value = '';
+      loadReminders();
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  });
+
+  // In-app reminder checker: while this page is open, checks every 30s
+  // whether the current local time matches any reminder, and fires a
+  // browser notification. This only works while the tab is open — there's
+  // no server-push mechanism here, which is an honest limitation to know.
+  let firedToday = new Set();
+  async function checkDueReminders() {
+    try {
+      const reminders = await apiRequest('/reminders');
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      reminders.forEach(r => {
+        const key = `${r._id}-${currentTime}`;
+        if (r.active && r.time === currentTime && !firedToday.has(key)) {
+          firedToday.add(key);
+          if (Notification.permission === 'granted') {
+            new Notification(r.title, { body: r.message || 'BlessMed reminder' });
+          }
+        }
+      });
+    } catch { /* silent — this is a background check */ }
+  }
+
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  setInterval(checkDueReminders, 30000);
+
+  loadReminders();
+</script>
+</body>
+</html>

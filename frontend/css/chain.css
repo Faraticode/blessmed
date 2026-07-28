@@ -1,0 +1,165 @@
+/* ============================================================
+   Chain Zone — a distinct dark, Stacks-purple visual mode used
+   only on blockchain.html and steps.html (the on-chain features),
+   so it reads as a different "space" from the clinical white of
+   the rest of BlessMed, similar to how wallets/explorers feel.
+   ============================================================ */
+
+.chain-zone {
+  background: var(--chain-bg);
+  min-height: 100vh;
+  color: var(--chain-text);
+}
+
+.chain-zone .page-header h1 { color: var(--chain-text); }
+.chain-zone .page-header p { color: var(--chain-text-muted); }
+
+.chain-card {
+  background: var(--chain-surface);
+  border: 1px solid var(--chain-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+
+.chain-card h3 { color: var(--chain-text); }
+.chain-card p { color: var(--chain-text-muted); }
+
+.chain-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  background: var(--gradient-chain);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(85, 70, 255, 0.35);
+}
+.chain-btn-primary:hover { box-shadow: 0 6px 26px rgba(85, 70, 255, 0.5); }
+.chain-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+.chain-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--chain-border);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--chain-text);
+}
+.chain-btn-secondary:hover { border-color: var(--chain-purple-light); }
+
+.chain-field input, .chain-field select, .chain-field textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--chain-border);
+  background: #0F0A18;
+  color: var(--chain-text);
+}
+.chain-field label { display: block; font-size: 13px; font-weight: 600; color: var(--chain-text-muted); margin-bottom: 6px; }
+
+.chain-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(85, 70, 255, 0.18);
+  color: var(--chain-purple-light);
+  border: 1px solid rgba(138, 124, 255, 0.35);
+}
+
+.chain-address {
+  font-family: monospace;
+  font-size: 13px;
+  background: #0F0A18;
+  color: var(--chain-purple-light);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  word-break: break-all;
+  border: 1px solid var(--chain-border);
+}
+
+.chain-points-display {
+  font-size: 48px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  background: var(--gradient-chain);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---------- Milestones (used on Steps page and within Blockchain) ---------- */
+.milestone-track {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.milestone-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--chain-border);
+  background: #0F0A18;
+}
+.milestone-row.reached { border-color: var(--chain-purple-light); background: rgba(85, 70, 255, 0.1); }
+.milestone-row.claimed { opacity: 0.6; }
+
+.milestone-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: var(--chain-border);
+  color: var(--chain-text-muted);
+}
+.milestone-row.reached .milestone-icon { background: var(--gradient-chain); color: #fff; }
+
+.milestone-body { flex: 1; }
+.milestone-body strong { display: block; color: var(--chain-text); font-size: 14px; }
+.milestone-body span { font-size: 12px; color: var(--chain-text-muted); }
+
+.milestone-points { font-family: var(--font-display); font-weight: 700; color: var(--chain-orange); font-size: 15px; }
+
+.progress-bar-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 20px;
+  background: var(--chain-border);
+  overflow: hidden;
+  margin: 16px 0;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--gradient-chain);
+  border-radius: 20px;
+  transition: width 0.4s ease;
+}
+
+.step-input-row { display: flex; gap: 10px; align-items: flex-end; }
+.step-input-row .chain-field { flex: 1; }
+
+@media (max-width: 820px) {
+  .step-input-row { flex-direction: column; align-items: stretch; }
+}

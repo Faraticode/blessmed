@@ -17,7 +17,6 @@ import {
 
 import {
   Cl,
-  cvToValue,
   fetchCallReadOnlyFunction
 } from 'https://esm.sh/@stacks/transactions@7';
 
@@ -64,8 +63,10 @@ const Stacks = {
   },
 
   // Look up a hash on-chain — read-only, no wallet prompt needed.
+  // Returns the raw Clarity value (an OptionalCV wrapping a TupleCV),
+  // which callers read via .value.<field>.value.
   async getRecord(hexHash) {
-    const result = await fetchCallReadOnlyFunction({
+    return fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
       functionName: 'get-record',
@@ -73,7 +74,6 @@ const Stacks = {
       network: NETWORK,
       senderAddress: CONTRACT_ADDRESS
     });
-    return cvToValue(result);
   },
 
   // Award points to the connected wallet for a healthy action.
@@ -88,8 +88,10 @@ const Stacks = {
   },
 
   // Read current point total for an address — no wallet prompt needed.
+  // Returns the raw Clarity value (a TupleCV); callers read via
+  // .value.points.value to get the actual number.
   async getPoints(address) {
-    const result = await fetchCallReadOnlyFunction({
+    return fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
       functionName: 'get-points',
@@ -97,7 +99,6 @@ const Stacks = {
       network: NETWORK,
       senderAddress: address
     });
-    return cvToValue(result);
   }
 };
 

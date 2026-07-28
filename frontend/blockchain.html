@@ -5,24 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Blockchain — BlessMed</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=3" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=4" />
+<link rel="stylesheet" href="css/chain.css?v=1" />
 <style>
   .wallet-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-  .wallet-address {
-    font-family: monospace; font-size: 13px; background: #EEF4F7; color: var(--navy);
-    padding: 8px 12px; border-radius: var(--radius-sm); word-break: break-all;
-  }
-  .section-gap { margin-top: 24px; }
-  .points-display { font-size: 42px; font-family: var(--font-display); color: var(--navy); }
-  .tx-link { font-size: 13px; margin-top: 10px; display: inline-block; }
+  .section-gap { margin-top: 20px; }
+  .tx-link { font-size: 13px; margin-top: 10px; display: inline-block; color: var(--chain-orange); }
   .verify-result { margin-top: 14px; padding: 12px 16px; border-radius: var(--radius-sm); font-size: 14px; }
-  .verify-found { background: #E7F7EF; color: var(--success); }
-  .verify-missing { background: var(--coral-soft); color: var(--coral); }
-  .testnet-badge {
-    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
-    background: #FFF3CD; color: #8A6D1D; padding: 3px 10px; border-radius: 20px; margin-left: 10px;
-  }
+  .verify-found { background: rgba(46, 158, 107, 0.15); color: #6BE0A6; }
+  .verify-missing { background: rgba(232, 96, 76, 0.15); color: #F4948A; }
+  .chain-alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 14px; margin-bottom: 16px; background: rgba(232, 96, 76, 0.15); color: #F4948A; }
 </style>
 </head>
 <body>
@@ -30,54 +23,54 @@
 <div class="app-shell">
   <div id="sidebar-root"></div>
 
-  <div class="main-content">
+  <div class="main-content chain-zone">
     <div class="page-header">
-      <h1>Blockchain <span class="testnet-badge">Testnet demo</span></h1>
-      <p>Connect a Stacks wallet to verify record integrity on-chain and earn reward points for healthy habits.</p>
+      <h1>Blockchain <span class="chain-badge">Testnet demo</span></h1>
+      <p>Connect a Stacks wallet to verify record integrity on-chain and earn reward points for healthy habits. Points earned here also come from hitting daily step goals — see the <a href="steps.html" style="color:var(--chain-purple-light);">Steps</a> page.</p>
     </div>
 
     <div id="alert-box"></div>
 
-    <div class="card wallet-bar">
+    <div class="chain-card wallet-bar">
       <div id="wallet-status">
         <strong id="wallet-label">No wallet connected</strong>
         <div id="wallet-address-display"></div>
       </div>
-      <button class="btn btn-primary" id="connect-btn">Connect Wallet</button>
+      <button class="chain-btn-primary" id="connect-btn">Connect Wallet</button>
     </div>
 
     <div id="connected-sections" style="display:none;">
 
-      <div class="card section-gap">
+      <div class="chain-card section-gap">
         <h3>Reward points</h3>
-        <p>Earn points on-chain for healthy actions like reading a tip or logging a record. This is a demo mechanic — points are self-reported by your wallet.</p>
-        <div class="points-display" id="points-display">—</div>
-        <div style="display:flex; gap:10px; margin-top:16px;">
-          <button class="btn btn-secondary" id="refresh-points-btn">Refresh points</button>
-          <button class="btn btn-primary" id="earn-points-btn">+1 point for a healthy action</button>
+        <p>Earn points on-chain for healthy actions — reading a tip, logging a record, or hitting a step milestone. Demo mechanic: points are self-reported by your wallet, not independently verified.</p>
+        <div class="chain-points-display" id="points-display">—</div>
+        <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+          <button class="chain-btn-secondary" id="refresh-points-btn">Refresh points</button>
+          <button class="chain-btn-primary" id="earn-points-btn">+1 point for a healthy action</button>
         </div>
         <div id="points-tx-result"></div>
       </div>
 
-      <div class="card section-gap">
+      <div class="chain-card section-gap">
         <h3>Verify a health record</h3>
         <p>Upload a file to compute its fingerprint (SHA-256 hash) and store it on-chain — this proves the exact file existed at this time, without putting the file itself on the blockchain.</p>
-        <div class="field">
+        <div class="chain-field">
           <label for="record-file">File to register</label>
           <input type="file" id="record-file" />
         </div>
-        <button class="btn btn-primary" id="store-hash-btn">Store hash on-chain</button>
+        <button class="chain-btn-primary" id="store-hash-btn">Store hash on-chain</button>
         <div id="store-hash-result"></div>
       </div>
 
-      <div class="card section-gap">
+      <div class="chain-card section-gap">
         <h3>Check if a file was registered</h3>
         <p>Upload a file to see if its hash has already been stored on-chain, and by whom.</p>
-        <div class="field">
+        <div class="chain-field">
           <label for="verify-file">File to check</label>
           <input type="file" id="verify-file" />
         </div>
-        <button class="btn btn-secondary" id="verify-btn">Check on-chain</button>
+        <button class="chain-btn-secondary" id="verify-btn">Check on-chain</button>
         <div id="verify-result"></div>
       </div>
 
@@ -87,17 +80,16 @@
 
 <script src="js/api.js?v=3"></script>
 <script src="js/ui.js?v=3"></script>
-<script src="js/nav.js?v=3"></script>
+<script src="js/nav.js?v=4"></script>
 <script>
   Auth.requireLogin();
   renderSidebar('blockchain');
 </script>
 
 <script type="module">
-  import './js/stacks.js?v=2';
+  import './js/stacks.js?v=3';
 </script>
 <script type="module">
-  // Give the Stacks module a moment to attach window.Stacks, then wire up the UI.
   function whenStacksReady(callback) {
     if (window.Stacks) return callback();
     const interval = setInterval(() => {
@@ -117,7 +109,7 @@
 
       if (address) {
         label.textContent = 'Wallet connected';
-        addrDisplay.innerHTML = `<span class="wallet-address">${address}</span>`;
+        addrDisplay.innerHTML = `<span class="chain-address">${address}</span>`;
         connectBtn.textContent = 'Disconnect';
         connectedSections.style.display = 'block';
         refreshPoints();
@@ -136,15 +128,15 @@
       display.textContent = '…';
       try {
         const result = await Stacks.getPoints(address);
-        display.textContent = result.points ?? '0';
+        display.textContent = result?.value?.points?.value?.toString() ?? '0';
       } catch (err) {
         display.textContent = '—';
-        showAlert('alert-box', `Could not read points from chain: ${err.message}`);
+        document.getElementById('alert-box').innerHTML = `<div class="chain-alert">Could not read points from chain: ${err.message}</div>`;
       }
     }
 
     document.getElementById('connect-btn').addEventListener('click', async () => {
-      clearAlert('alert-box');
+      document.getElementById('alert-box').innerHTML = '';
       try {
         if (Stacks.isConnected()) {
           Stacks.disconnectWallet();
@@ -155,14 +147,11 @@
           if (address) {
             try {
               await apiRequest('/auth/wallet', { method: 'PUT', body: { walletAddress: address } });
-            } catch {
-              // Non-critical — the wallet still works for on-chain actions
-              // even if linking it to the account fails.
-            }
+            } catch { /* non-critical */ }
           }
         }
       } catch (err) {
-        showAlert('alert-box', err.message);
+        document.getElementById('alert-box').innerHTML = `<div class="chain-alert">${err.message}</div>`;
       }
     });
 
@@ -175,7 +164,7 @@
         const { txid } = await Stacks.earnPoints(1);
         resultBox.innerHTML = `<a class="tx-link" href="https://explorer.hiro.so/txid/${txid}?chain=testnet" target="_blank">Transaction submitted — view on explorer</a>`;
       } catch (err) {
-        showAlert('alert-box', err.message);
+        document.getElementById('alert-box').innerHTML = `<div class="chain-alert">${err.message}</div>`;
       }
     });
 
@@ -183,7 +172,7 @@
       const resultBox = document.getElementById('store-hash-result');
       resultBox.innerHTML = '';
       const file = document.getElementById('record-file').files[0];
-      if (!file) return showAlert('alert-box', 'Choose a file first.');
+      if (!file) { document.getElementById('alert-box').innerHTML = `<div class="chain-alert">Choose a file first.</div>`; return; }
 
       try {
         const hexHash = await Stacks.hashFile(file);
@@ -194,7 +183,7 @@
             <a class="tx-link" href="https://explorer.hiro.so/txid/${txid}?chain=testnet" target="_blank">View transaction</a>
           </div>`;
       } catch (err) {
-        showAlert('alert-box', err.message);
+        document.getElementById('alert-box').innerHTML = `<div class="chain-alert">${err.message}</div>`;
       }
     });
 
@@ -202,22 +191,23 @@
       const resultBox = document.getElementById('verify-result');
       resultBox.innerHTML = '';
       const file = document.getElementById('verify-file').files[0];
-      if (!file) return showAlert('alert-box', 'Choose a file first.');
+      if (!file) { document.getElementById('alert-box').innerHTML = `<div class="chain-alert">Choose a file first.</div>`; return; }
 
       try {
         const hexHash = await Stacks.hashFile(file);
         const record = await Stacks.getRecord(hexHash);
-        if (record && record.value) {
+        const tuple = record?.value;
+        if (tuple) {
           resultBox.innerHTML = `
             <div class="verify-result verify-found">
-              Registered on-chain by <strong>${record.value.owner.value}</strong>
-              at block ${record.value['registered-at'].value}.
+              Registered on-chain by <strong>${tuple.value.owner.value}</strong>
+              at block ${tuple.value['registered-at'].value}.
             </div>`;
         } else {
           resultBox.innerHTML = `<div class="verify-result verify-missing">This exact file has not been registered on-chain.</div>`;
         }
       } catch (err) {
-        showAlert('alert-box', err.message);
+        document.getElementById('alert-box').innerHTML = `<div class="chain-alert">${err.message}</div>`;
       }
     });
 

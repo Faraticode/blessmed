@@ -5,11 +5,13 @@ function renderSidebar(activePage) {
   const user = Auth.getUser();
   const items = [
     { key: 'dashboard', label: 'Dashboard', href: 'dashboard.html', icon: '&#9679;' },
+    { key: 'blockchain', label: 'Blockchain', href: 'blockchain.html', icon: '&#9679;' },
+    { key: 'steps', label: 'Steps', href: 'steps.html', icon: '&#9679;' },
+    { key: 'reminders', label: 'Reminders', href: 'reminders.html', icon: '&#9679;' },
     { key: 'profile', label: 'Health Profile', href: 'profile.html', icon: '&#9679;' },
     { key: 'records', label: 'Health Records', href: 'records.html', icon: '&#9679;' },
     { key: 'emergency', label: 'Emergency QR', href: 'emergency.html', icon: '&#9679;' },
-    { key: 'tips', label: 'Health Tips', href: 'tips.html', icon: '&#9679;' },
-    { key: 'blockchain', label: 'Blockchain', href: 'blockchain.html', icon: '&#9679;' }
+    { key: 'tips', label: 'Health Tips', href: 'tips.html', icon: '&#9679;' }
   ];
 
   const navHtml = items
@@ -21,11 +23,13 @@ function renderSidebar(activePage) {
     )
     .join('');
 
+  const avatarSrc = user?.avatarPath ? `/uploads/${user.avatarPath}` : 'assets/logo.jpg';
+
   const root = document.getElementById('sidebar-root');
   root.innerHTML = `
     <div class="sidebar">
       <div class="sidebar-brand">
-        <img src="assets/logo.jpg" alt="BlessMed logo" />
+        <img src="${avatarSrc}" alt="Profile picture" />
         <span>BlessMed</span>
       </div>
       <nav class="nav-list">${navHtml}</nav>

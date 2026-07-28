@@ -19,6 +19,19 @@
   --coral-soft: #FDEDEA;
   --success: #2E9E6B;
 
+  /* Stacks-inspired dark/purple theme, used only within .chain-zone
+     (the Blockchain page) so it reads as a distinct "on-chain" space
+     rather than reskinning the whole clinical/white app. */
+  --chain-bg: #0B0713;
+  --chain-surface: #17101F;
+  --chain-purple: #5546FF;
+  --chain-purple-light: #8A7CFF;
+  --chain-orange: #F7931A;
+  --chain-border: #2A2138;
+  --chain-text: #F1EDFB;
+  --chain-text-muted: #A99FC2;
+  --gradient-chain: linear-gradient(135deg, #5546FF 0%, #8A7CFF 50%, #F7931A 130%);
+
   --gradient-brand: linear-gradient(135deg, var(--navy) 0%, var(--ocean) 45%, var(--teal) 100%);
 
   --font-display: 'Sora', sans-serif;
@@ -179,7 +192,7 @@ textarea:focus-visible, a:focus-visible {
   border-bottom: 1px solid rgba(255,255,255,0.15);
   margin-bottom: 20px;
 }
-.sidebar-brand img { width: 34px; height: 34px; border-radius: 8px; background: #fff; }
+.sidebar-brand img { width: 34px; height: 34px; border-radius: 8px; background: #fff; object-fit: cover; }
 .sidebar-brand span { font-family: var(--font-display); font-weight: 700; font-size: 18px; }
 
 .nav-list { display: flex; flex-direction: column; }

@@ -6,7 +6,7 @@
 <title>Dashboard — BlessMed</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=3" />
+<link rel="stylesheet" href="css/style.css?v=4" />
 <style>
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-top: 20px; }
   .stat-card h3 { font-size: 30px; margin-bottom: 2px; }
@@ -38,6 +38,10 @@
         <span>Health profile status</span>
       </div>
       <div class="card stat-card">
+        <h3 id="stat-steps">—</h3>
+        <span>Steps today</span>
+      </div>
+      <div class="card stat-card">
         <h3 id="stat-tips">—</h3>
         <span>New health tips</span>
       </div>
@@ -47,6 +51,18 @@
 
     <h2>Quick actions</h2>
     <div class="quick-links">
+      <a class="card quick-link" href="blockchain.html">
+        <strong>Blockchain &amp; rewards</strong>
+        <p>Connect your wallet, verify records, and check your points.</p>
+      </a>
+      <a class="card quick-link" href="steps.html">
+        <strong>Log today's steps</strong>
+        <p>Track steps and hit milestones for on-chain points.</p>
+      </a>
+      <a class="card quick-link" href="reminders.html">
+        <strong>Reminders</strong>
+        <p>AI-suggested and custom health reminders.</p>
+      </a>
       <a class="card quick-link" href="profile.html">
         <strong>Update health profile</strong>
         <p>Blood group, genotype, allergies, and emergency contact.</p>
@@ -69,7 +85,7 @@
 
 <script src="js/api.js?v=3"></script>
 <script src="js/ui.js?v=3"></script>
-<script src="js/nav.js?v=3"></script>
+<script src="js/nav.js?v=4"></script>
 <script>
   Auth.requireLogin();
   renderSidebar('dashboard');
@@ -95,6 +111,11 @@
       const tips = await apiRequest('/tips');
       document.getElementById('stat-tips').textContent = tips.length;
     } catch { document.getElementById('stat-tips').textContent = '0'; }
+
+    try {
+      const today = await apiRequest('/steps/today');
+      document.getElementById('stat-steps').textContent = today.steps.toLocaleString();
+    } catch { document.getElementById('stat-steps').textContent = '0'; }
   }
 
   loadStats();
