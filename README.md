@@ -26,7 +26,151 @@ and read daily health tips.
 | Health Tips feed (with category filter) | ✅ |
 | Medication reminders | 🔜 Phase 2 |
 | AI Health Assistant chatbot | 🔜 Phase 2 |
-| Wallet connect | 🔜 Later |
+| Stacks blockchain: wallet connect, on-chain record verification, reward points | ✅ Testnet demo |
+| Daily step tracking with milestone rewards | ✅ |
+| AI-generated health reminders (Claude API) | ✅ |
+| Profile picture | ✅ |
+
+## New features in this update
+
+- **Steps (`steps.html`)** — log a daily step count; hitting 5,000 / 10,000 /
+  15,000 / 20,000 steps in a day unlocks an on-chain points claim (2/5/8/12
+  points respectively). Only the highest milestone reached each day can be
+  claimed, once — the backend tracks that in `StepLog.claimedMilestone`.
+  Steps can now come from three sources, which all merge into the same
+  daily total (the higher value wins, so none of them can undercut another):
+  - **Manual entry** — type a number in, same as before.
+  - **Automatic tracking (`js/pedometer.js`)** — uses the phone's motion
+    sensor to count steps while the page is open in the foreground. No
+    account needed, but it only counts while the tab stays open and active
+    — browsers suspend sensors in the background, and there's no way around
+    that from a website.
+  - **Connected trackers ("Connect a tracker" card)** — for steps counted
+    even when BlessMed isn't open:
+    - *Google Health* — OAuth-connect a Fitbit, Pixel Watch, or other
+      Google-linked device (`backend/routes/integrations.js`). Needs
+      `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI`
+      set (see below) and a project registered at
+      https://developers.google.com/health. Note this API is quite new —
+      double-check the current data-point/rollup response shape against
+      Google's docs before relying on it in production, in case it's
+      changed since this was written.
+    - *Apple Health* — Apple has no public web API for HealthKit data, so
+      there's no way to pull it directly from a server. The workaround
+      here is a per-user webhook URL (`/api/integrations/apple/webhook/:token`)
+      that a bridge app on the phone — e.g. "Health Auto Export" — can be
+      set up to push a daily step count to on a schedule. Click "Get
+      webhook URL" on the Steps page for your link and paste it into that
+      app's automation settings.
+- **Reminders (`reminders.html`)** — click "Generate suggestions" to get
+  3–5 general wellness reminders from Claude, based on your health profile
+  (age, conditions, allergies). It never names specific medications or
+  gives medical advice — just general prompts like "take your morning
+  medication" or "drink water." Accept a suggestion to save it, or add
+  your own manually. **Limitation to know:** reminders fire via a
+  background check while the Reminders page is open in your browser —
+  there's no server-push notification system here, so they won't fire if
+  the tab/app is closed.
+- **Profile picture** — upload one from the Health Profile page; it shows
+  in the sidebar next to your name everywhere in the app.
+- **Blockchain moved up in the sidebar**, and restyled with a dark,
+  Stacks-purple theme (distinct from the rest of the app's clinical white)
+  so it reads as its own "on-chain" space.
+
+### One more environment variable needed
+
+The AI reminders feature needs an Anthropic API key. Get one at
+https://console.anthropic.com/settings/keys, then:
+
+- **Locally:** add to your `.env` file:
+  ```
+  ANTHROPIC_API_KEY=your_key_here
+  ```
+- **On Render:** go to your Web Service → Environment → Add Environment
+  Variable → Key: `ANTHROPIC_API_KEY`, Value: your key → Save. Render will
+  redeploy automatically.
+
+Without this key, every other feature keeps working — only the "Generate
+suggestions" button on the Reminders page will show an error until it's set.
+
+### Setting up Google Health (optional)
+
+Only needed if you want the "Connect a tracker → Google Health" button to
+work; everything else (manual entry, phone-sensor auto-tracking, Apple
+Health webhook) works without it.
+
+1. Go to https://developers.google.com/health and create/enable a project
+   in Google Cloud Console for the Health API.
+2. Under APIs & Services → Credentials, create an OAuth 2.0 Client ID
+   (type: Web application).
+3. Add an authorized redirect URI matching `GOOGLE_REDIRECT_URI` below
+   (e.g. `https://your-domain.com/api/integrations/callback/google`).
+4. Add to your `.env`:
+   ```
+   GOOGLE_CLIENT_ID=your_client_id
+   GOOGLE_CLIENT_SECRET=your_client_secret
+   GOOGLE_REDIRECT_URI=https://your-domain.com/api/integrations/callback/google
+   APP_BASE_URL=https://your-domain.com
+   ```
+5. While your OAuth consent screen is in "Testing" mode, Google issues
+   short-lived refresh tokens (they expire after 7 days) — publish the
+   consent screen before relying on this for real users.
+
+## Blockchain feature (Stacks testnet)
+
+BlessMed includes an optional `blockchain.html` page that connects a Stacks
+wallet (Leather, Xverse, etc.) and talks to a small Clarity smart contract
+at `contracts/blessmed-registry.clar`. It does two things:
+
+1. **Record verification** — computes a SHA-256 fingerprint of a file in
+   the browser and stores just that fingerprint on-chain (never the file
+   itself), so you can later prove a specific file existed at a specific
+   time without exposing its contents.
+2. **Reward points** — a simple, self-reported point tracker for healthy
+   actions, stored on-chain per wallet address.
+
+This is a **testnet demo** — it costs nothing, but also isn't connected to
+mainnet STX or real value.
+
+### Deploying the smart contract
+
+You don't need any CLI tools for this — it's all done in the browser:
+
+1. Install a Stacks wallet browser extension, e.g. [Leather](https://leather.io)
+   or [Xverse](https://xverse.app), and switch it to **Testnet** in its settings
+2. Get free testnet STX from the faucet built into
+   [the Stacks Explorer Sandbox](https://explorer.hiro.so/sandbox/deploy?chain=testnet)
+   (there's a "Get testnet STX" button once your wallet is connected)
+3. Go to https://explorer.hiro.so/sandbox/deploy?chain=testnet and connect
+   your wallet
+4. Copy the full contents of `contracts/blessmed-registry.clar` into the
+   code editor
+5. Give it a contract name, e.g. `blessmed-registry`
+6. Click **Deploy** and confirm in your wallet — wait for the transaction
+   to confirm (the Explorer will show it as pending, then successful)
+7. Once deployed, note your wallet's address (starts with `ST...` on
+   testnet) — the deployed contract's full identifier is
+   `YOUR_ADDRESS.blessmed-registry`
+
+### Connecting the frontend to your deployed contract
+
+Open `frontend/js/stacks.js` and update this line near the top:
+
+```js
+const CONTRACT_ADDRESS = 'ST000000000000000000002AMW42H'; // placeholder — replace after deploying
+```
+
+Replace the placeholder with **your own** testnet address from step 7
+above (just the address, not the contract name — that's already set via
+`CONTRACT_NAME` on the next line). Save, then redeploy the frontend as
+usual (commit + push, or re-upload if hosting separately).
+
+### Using it
+
+Open `blockchain.html` in the app (there's a "Blockchain" link in the
+sidebar), click **Connect Wallet**, and approve the connection in your
+wallet extension. From there you can earn points, register a file's hash,
+and check whether a file has already been registered.
 
 ## Getting set up on your machine
 

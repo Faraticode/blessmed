@@ -11,6 +11,7 @@ const emergencyRoutes = require('./routes/emergency');
 const tipRoutes = require('./routes/tips');
 const stepRoutes = require('./routes/steps');
 const reminderRoutes = require('./routes/reminders');
+const integrationRoutes = require('./routes/integrations');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/emergency', emergencyRoutes);
 app.use('/api/tips', tipRoutes);
 app.use('/api/steps', stepRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/integrations', integrationRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'BlessMed API is running.' });

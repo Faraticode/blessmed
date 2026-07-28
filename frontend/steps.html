@@ -36,12 +36,55 @@
       <h3>Today</h3>
       <div class="today-steps-display" id="today-steps">0 <span>steps</span></div>
 
+      <div class="autotrack-row" style="margin-top:18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <button class="chain-btn-primary" id="track-btn">Start automatic tracking</button>
+        <span id="track-status" style="font-size:13px; color:var(--chain-text-muted);">Not tracking</span>
+      </div>
+      <p style="font-size:12px; color:var(--chain-text-muted); margin-top:8px;">
+        Uses your phone's motion sensor to count steps while this page is open. Keep the tab in the foreground — browsers pause sensors in the background. Works best on Android Chrome / iOS Safari over HTTPS.
+      </p>
+
       <div class="step-input-row" style="margin-top:18px;">
         <div class="chain-field">
-          <label for="steps-input">Update today's step count</label>
+          <label for="steps-input">Or enter your step count manually</label>
           <input type="number" id="steps-input" min="0" placeholder="e.g. 8500" />
         </div>
-        <button class="chain-btn-primary" id="save-steps-btn">Save</button>
+        <button class="chain-btn-secondary" id="save-steps-btn">Save</button>
+      </div>
+    </div>
+
+    <div class="chain-card section-gap">
+      <h3>Connect a tracker</h3>
+      <p>Sync steps automatically from your phone or watch, even when this page isn't open.</p>
+
+      <div class="connect-row" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid var(--chain-border); flex-wrap:wrap;">
+        <div>
+          <strong style="display:block;">Google Health</strong>
+          <span style="font-size:12px; color:var(--chain-text-muted);">Covers Fitbit, Pixel Watch, and other Google-linked trackers.</span>
+          <div id="google-status" style="font-size:13px; margin-top:4px;">Checking…</div>
+        </div>
+        <div id="google-actions" style="display:flex; gap:8px;"></div>
+      </div>
+
+      <div class="connect-row" style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px 0; flex-wrap:wrap;">
+        <div style="flex:1; min-width:220px;">
+          <strong style="display:block;">Apple Health</strong>
+          <span style="font-size:12px; color:var(--chain-text-muted);">
+            Apple doesn't offer a web API for Health data, so this works through a bridge app:
+            install <strong>Health Auto Export</strong> (or similar) on your iPhone, add an automation
+            for Steps, and set its destination to the webhook URL below.
+          </span>
+          <div id="apple-webhook-box" style="margin-top:8px; display:none;">
+            <div class="chain-field">
+              <label>Your webhook URL</label>
+              <input type="text" id="apple-webhook-url" readonly style="font-size:12px;" />
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="chain-btn-secondary" id="apple-copy-btn" style="display:none;">Copy</button>
+          <button class="chain-btn-secondary" id="apple-generate-btn">Get webhook URL</button>
+        </div>
       </div>
     </div>
 
@@ -64,6 +107,7 @@
 <script src="js/api.js?v=3"></script>
 <script src="js/ui.js?v=3"></script>
 <script src="js/nav.js?v=4"></script>
+<script src="js/pedometer.js?v=1"></script>
 <script>
   Auth.requireLogin();
   renderSidebar('steps');
@@ -144,6 +188,196 @@
 
   loadToday();
   loadHistory();
+
+  // --- Automatic step tracking (phone motion sensor) ---------------------
+  const trackBtn = document.getElementById('track-btn');
+  const trackStatus = document.getElementById('track-status');
+
+  let counter = null;
+  let baselineSteps = 0;   // steps already saved for today when tracking started
+  let sessionSteps = 0;    // steps counted by the sensor this session
+  let syncTimer = null;
+  let dirty = false;       // true if sessionSteps changed since the last sync
+
+  function updateLiveDisplay() {
+    const total = baselineSteps + sessionSteps;
+    document.getElementById('today-steps').innerHTML = `${total.toLocaleString()} <span>steps</span>`;
+    document.getElementById('steps-input').value = total;
+    trackStatus.textContent = `Tracking — +${sessionSteps.toLocaleString()} this session`;
+  }
+
+  async function syncSteps() {
+    if (!dirty) return;
+    dirty = false;
+    try {
+      await apiRequest('/steps', { method: 'POST', body: { steps: baselineSteps + sessionSteps } });
+      todayData = await apiRequest('/steps/today');
+      renderMilestones(todayData);
+      await loadHistory();
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  }
+
+  async function startTracking() {
+    clearAlert('alert-box');
+
+    if (!window.StepCounter || !StepCounter.isSupported()) {
+      showAlert('alert-box', "This browser doesn't support motion sensing (DeviceMotionEvent). Try Chrome on Android or Safari on iOS, and log steps manually instead.");
+      return;
+    }
+
+    const granted = await StepCounter.requestPermission();
+    if (!granted) {
+      showAlert('alert-box', 'Motion access was denied. Enable it in your browser settings to auto-track steps, or log steps manually.');
+      return;
+    }
+
+    baselineSteps = todayData?.steps || 0;
+    sessionSteps = 0;
+
+    counter = new StepCounter({
+      onStep: () => {
+        sessionSteps++;
+        dirty = true;
+        updateLiveDisplay();
+      }
+    });
+    counter.start();
+
+    syncTimer = setInterval(syncSteps, 10000); // push to the server every 10s
+    trackBtn.textContent = 'Stop tracking';
+    trackStatus.textContent = 'Tracking — 0 this session';
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+  }
+
+  async function stopTracking() {
+    if (counter) counter.stop();
+    counter = null;
+    if (syncTimer) clearInterval(syncTimer);
+    syncTimer = null;
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+    await syncSteps(); // flush any remaining steps
+    trackBtn.textContent = 'Start automatic tracking';
+    trackStatus.textContent = 'Not tracking';
+  }
+
+  function handleVisibilityChange() {
+    // Sensors pause in the background anyway; sync what we have so it's not lost.
+    if (document.hidden) syncSteps();
+  }
+
+  trackBtn.addEventListener('click', () => {
+    if (counter) {
+      stopTracking();
+    } else {
+      startTracking();
+    }
+  });
+
+  // --- Connected trackers (Google Health + Apple Health webhook) ---------
+  const googleStatusEl = document.getElementById('google-status');
+  const googleActionsEl = document.getElementById('google-actions');
+
+  function renderGoogleConnected(connectedAt) {
+    googleStatusEl.textContent = `Connected${connectedAt ? ' since ' + formatDate(connectedAt) : ''}`;
+    googleActionsEl.innerHTML = '';
+
+    const syncBtn = document.createElement('button');
+    syncBtn.className = 'chain-btn-secondary';
+    syncBtn.textContent = 'Sync now';
+    syncBtn.onclick = async () => {
+      syncBtn.disabled = true;
+      syncBtn.textContent = 'Syncing…';
+      try {
+        await apiRequest('/integrations/sync/google', { method: 'POST' });
+        await loadToday();
+        await loadHistory();
+      } catch (err) {
+        showAlert('alert-box', err.message);
+      }
+      syncBtn.disabled = false;
+      syncBtn.textContent = 'Sync now';
+    };
+
+    const disconnectBtn = document.createElement('button');
+    disconnectBtn.className = 'chain-btn-secondary';
+    disconnectBtn.textContent = 'Disconnect';
+    disconnectBtn.onclick = async () => {
+      try {
+        await apiRequest('/integrations/google', { method: 'DELETE' });
+        loadIntegrationStatus();
+      } catch (err) {
+        showAlert('alert-box', err.message);
+      }
+    };
+
+    googleActionsEl.append(syncBtn, disconnectBtn);
+  }
+
+  function renderGoogleDisconnected() {
+    googleStatusEl.textContent = 'Not connected';
+    googleActionsEl.innerHTML = '';
+
+    const connectBtn = document.createElement('button');
+    connectBtn.className = 'chain-btn-primary';
+    connectBtn.textContent = 'Connect';
+    connectBtn.onclick = () => {
+      window.location.href = `/api/integrations/connect/google?token=${encodeURIComponent(Auth.getToken())}`;
+    };
+    googleActionsEl.appendChild(connectBtn);
+  }
+
+  async function loadIntegrationStatus() {
+    try {
+      const status = await apiRequest('/integrations/status');
+      if (status.google.connected) {
+        renderGoogleConnected(status.google.connectedAt);
+      } else {
+        renderGoogleDisconnected();
+      }
+
+      if (status.apple.webhookUrl) {
+        document.getElementById('apple-webhook-box').style.display = 'block';
+        document.getElementById('apple-webhook-url').value = status.apple.webhookUrl;
+        document.getElementById('apple-copy-btn').style.display = 'inline-flex';
+        document.getElementById('apple-generate-btn').textContent = 'Regenerate webhook URL';
+      }
+    } catch (err) {
+      googleStatusEl.textContent = 'Unable to load status';
+    }
+  }
+
+  document.getElementById('apple-generate-btn').addEventListener('click', async () => {
+    try {
+      await apiRequest('/integrations/apple/regenerate', { method: 'POST' });
+      loadIntegrationStatus();
+    } catch (err) {
+      showAlert('alert-box', err.message);
+    }
+  });
+
+  document.getElementById('apple-copy-btn').addEventListener('click', () => {
+    const input = document.getElementById('apple-webhook-url');
+    input.select();
+    navigator.clipboard?.writeText(input.value);
+  });
+
+  // Handle the redirect back from Google's consent screen.
+  const urlParams = new URLSearchParams(window.location.search);
+  const googleResult = urlParams.get('google');
+  if (googleResult === 'connected') {
+    loadToday();
+  } else if (googleResult === 'denied' || googleResult === 'error') {
+    showAlert('alert-box', googleResult === 'denied'
+      ? 'Google Health connection was cancelled.'
+      : 'Something went wrong connecting Google Health. Please try again.');
+  }
+  if (googleResult) window.history.replaceState({}, '', 'steps.html');
+
+  loadIntegrationStatus();
 
   // Wire up the claim button once a wallet is available.
   whenStacksReady(() => {
