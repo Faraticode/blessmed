@@ -1,21 +1,19 @@
 ;; ============================================================
 ;; BlessMed Registry
-;; A demo contract for the "Decentralized" and "Rewarding"
-;; pillars of BlessMed, deployed on the Stacks testnet.
-;;
-;; Two features:
-;; 1. Record verification: store a SHA-256 hash of a health
-;;    record (the file itself stays off-chain, in MongoDB —
-;;    only its fingerprint goes on-chain) so its integrity can
-;;    be verified later; anyone can check a hash was registered
-;;    and by whom, without exposing the record's contents.
-;; 2. Reward points: a simple point tracker for healthy actions
-;;    (reading a tip, uploading a record, etc). This is a demo
-;;    mechanic — points are self-reported by the connected
-;;    wallet, not independently verified.
+;; Testnet demo contract — record hashes, reward points,
+;; and a daily check-in that spends a small amount of STX.
 ;; ============================================================
 
 (define-constant err-already-registered (err u100))
+(define-constant err-already-checked-in (err u101))
+(define-constant err-transfer-failed (err u102))
+
+;; ~0.001 STX (1000 microSTX) — cheap on testnet, still real STX movement
+(define-constant CHECK-IN-FEE u1000)
+
+;; Approximate "day" length in burn blocks (testnet is faster;
+;; 144 ≈ 1 day on mainnet). Adjust if you want stricter/looser windows.
+(define-constant BLOCKS-PER-DAY u144)
 
 ;; record-hash -> who registered it, and at what block height
 (define-map health-records-registry
@@ -29,11 +27,14 @@
   { points: uint }
 )
 
+;; principal -> last check-in day number (burn-block-height / BLOCKS-PER-DAY)
+(define-map last-check-in
+  { user: principal }
+  { day: uint }
+)
+
 ;; ---------- Record verification ----------
 
-;; Store the hash of a health record on-chain. Fails harmlessly
-;; if this exact hash was already registered (e.g. duplicate
-;; upload), so a record can't be silently overwritten.
 (define-public (store-record-hash (record-hash (buff 32)))
   (if (map-insert health-records-registry
         { record-hash: record-hash }
@@ -41,15 +42,11 @@
       (ok true)
       err-already-registered))
 
-;; Look up a previously registered hash. Returns none if this
-;; hash has never been stored.
 (define-read-only (get-record (record-hash (buff 32)))
   (map-get? health-records-registry { record-hash: record-hash }))
 
 ;; ---------- Reward points ----------
 
-;; Award points to the caller for a healthy action. Demo-only:
-;; self-reported, not gated by any off-chain proof.
 (define-public (earn-points (amount uint))
   (let ((current (default-to { points: u0 }
                     (map-get? reward-points { user: tx-sender }))))
@@ -60,3 +57,50 @@
 
 (define-read-only (get-points (user principal))
   (default-to { points: u0 } (map-get? reward-points { user: user })))
+
+;; ---------- Daily check-in (spends STX) ----------
+
+;; Returns the current "day" index derived from burn-block-height.
+(define-read-only (current-day)
+  (/ burn-block-height BLOCKS-PER-DAY))
+
+;; Returns the last day this user checked in, or none.
+(define-read-only (get-last-check-in (user principal))
+  (map-get? last-check-in { user: user }))
+
+;; True if the user has already checked in during the current day.
+(define-read-only (has-checked-in-today (user principal))
+  (match (map-get? last-check-in { user: user })
+    entry (is-eq (get day entry) (current-day))
+    false))
+
+;; Daily check-in:
+;; 1. Reject if already checked in today
+;; 2. Transfer CHECK-IN-FEE microSTX from the caller into the contract
+;; 3. Record today's day
+;; 4. Award a small number of points (5) as a reward
+;;
+;; The STX sits in the contract (as-contract). On testnet this is
+;; effectively a demo fee; you can later add a withdraw for a treasury.
+(define-public (daily-check-in)
+  (let (
+    (today (current-day))
+    (already (has-checked-in-today tx-sender))
+  )
+    (asserts! (not already) err-already-checked-in)
+    ;; Pull STX from the user into the contract
+    (try! (stx-transfer? CHECK-IN-FEE tx-sender (as-contract tx-sender)))
+    ;; Record check-in day
+    (map-set last-check-in { user: tx-sender } { day: today })
+    ;; Award points
+    (let ((current (default-to { points: u0 }
+                      (map-get? reward-points { user: tx-sender }))))
+      (map-set reward-points
+        { user: tx-sender }
+        { points: (+ (get points current) u5) })
+      (ok {
+        day: today,
+        fee: CHECK-IN-FEE,
+        points-awarded: u5,
+        new-total: (+ (get points current) u5)
+      }))))
