@@ -1,23 +1,22 @@
 /* ============================================
    BlessMed Design Tokens
-   Dark, premium base inspired by modern stats UIs:
-   deep navy surfaces + bright pastel accent cards.
+   Supports light + dark themes via data-theme attribute.
+   Default = dark. Toggle sets data-theme="light" | "dark".
    Coral remains reserved for emergency / critical only.
    ============================================ */
+
+/* ---------- DARK (default) ---------- */
 :root {
-  /* Core dark surfaces */
   --bg: #12151F;
   --surface: #1A1F2E;
   --surface-raised: #222838;
   --border: #2A3040;
   --border-soft: #252A3A;
 
-  /* Text */
   --text: #F0F2F8;
   --text-muted: #A1A8B8;
   --text-dim: #6B7385;
 
-  /* Brand & accent palette (pastel cards) */
   --navy: #0F2A4A;
   --ocean: #1B4E7A;
   --teal: #2DD4BF;
@@ -29,17 +28,18 @@
   --cyan: #67E8F9;
   --lavender: #C4B5FD;
 
-  /* Semantic */
   --coral: #E8604C;
   --coral-soft: rgba(232, 96, 76, 0.15);
   --success: #4CD964;
   --success-soft: rgba(76, 217, 100, 0.15);
 
-  /* Gradients */
   --gradient-brand: linear-gradient(135deg, #1A2744 0%, #1B4E7A 45%, #0D9488 100%);
   --gradient-card: linear-gradient(145deg, #1E2433 0%, #1A1F2E 100%);
 
-  /* Stacks / on-chain zone (kept distinct) */
+  --sidebar-bg: linear-gradient(180deg, #151A28 0%, #0F121C 100%);
+  --sidebar-border: #2A3040;
+
+  /* Stacks / on-chain zone (always dark) */
   --chain-bg: #0B0713;
   --chain-surface: #17101F;
   --chain-purple: #5546FF;
@@ -50,20 +50,56 @@
   --chain-text-muted: #A99FC2;
   --gradient-chain: linear-gradient(135deg, #5546FF 0%, #8A7CFF 50%, #F7931A 130%);
 
-  /* Typography */
   --font-display: 'Sora', sans-serif;
   --font-body: 'Inter', sans-serif;
 
-  /* Radii — softer, friendlier */
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 22px;
   --radius-xl: 28px;
 
-  /* Shadows tuned for dark UI */
   --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.25);
   --shadow-raised: 0 10px 36px rgba(0, 0, 0, 0.4);
   --shadow-glow: 0 0 24px rgba(45, 212, 191, 0.15);
+}
+
+/* ---------- LIGHT ---------- */
+[data-theme="light"] {
+  --bg: #F6F9FB;
+  --surface: #FFFFFF;
+  --surface-raised: #F0F4F8;
+  --border: #E2E9EE;
+  --border-soft: #E8EEF3;
+
+  --text: #14202B;
+  --text-muted: #5C7080;
+  --text-dim: #8A9AAB;
+
+  --navy: #0F2A4A;
+  --ocean: #1B4E7A;
+  --teal: #17A398;
+  --mint: #4FD1C5;
+  --yellow: #E5B82E;
+  --orange: #E07B2A;
+  --green: #2E9E6B;
+  --purple: #7C5CFC;
+  --cyan: #0EA5E9;
+  --lavender: #A78BFA;
+
+  --coral: #E8604C;
+  --coral-soft: #FDEDEA;
+  --success: #2E9E6B;
+  --success-soft: #E7F7EF;
+
+  --gradient-brand: linear-gradient(135deg, #0F2A4A 0%, #1B4E7A 45%, #17A398 100%);
+  --gradient-card: linear-gradient(145deg, #FFFFFF 0%, #F6F9FB 100%);
+
+  --sidebar-bg: linear-gradient(135deg, #0F2A4A 0%, #1B4E7A 45%, #17A398 100%);
+  --sidebar-border: rgba(255,255,255,0.15);
+
+  --shadow-card: 0 2px 10px rgba(15, 42, 74, 0.06);
+  --shadow-raised: 0 8px 30px rgba(15, 42, 74, 0.12);
+  --shadow-glow: 0 0 24px rgba(23, 163, 152, 0.12);
 }
 
 * { box-sizing: border-box; }
@@ -75,6 +111,7 @@ html, body {
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 h1, h2, h3, h4 {
@@ -91,7 +128,6 @@ a:hover { text-decoration: underline; }
 
 button, input, select, textarea { font-family: var(--font-body); font-size: 15px; }
 
-/* Focus visibility for keyboard users */
 button:focus-visible, input:focus-visible, select:focus-visible,
 textarea:focus-visible, a:focus-visible {
   outline: 2px solid var(--teal);
@@ -136,7 +172,7 @@ textarea:focus-visible, a:focus-visible {
   background: var(--coral-soft);
   color: var(--coral);
 }
-.btn-danger:hover { background: rgba(232, 96, 76, 0.25); }
+.btn-danger:hover { filter: brightness(0.95); }
 
 .btn-block { width: 100%; }
 
@@ -198,14 +234,14 @@ textarea:focus-visible, a:focus-visible {
 .alert-error { background: var(--coral-soft); color: var(--coral); }
 .alert-success { background: var(--success-soft); color: var(--success); }
 
-/* ---------- App shell (sidebar + content) ---------- */
+/* ---------- App shell ---------- */
 .app-shell { display: flex; min-height: 100vh; }
 
 .sidebar {
   width: 250px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #151A28 0%, #0F121C 100%);
-  border-right: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -217,21 +253,21 @@ textarea:focus-visible, a:focus-visible {
   align-items: center;
   gap: 10px;
   padding: 0 6px 24px 6px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--sidebar-border);
   margin-bottom: 20px;
 }
 .sidebar-brand img {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: var(--surface-raised);
+  background: rgba(255,255,255,0.12);
   object-fit: cover;
 }
 .sidebar-brand span {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 18px;
-  color: var(--text);
+  color: #fff;
 }
 
 .nav-list { display: flex; flex-direction: column; }
@@ -242,7 +278,7 @@ textarea:focus-visible, a:focus-visible {
   gap: 12px;
   padding: 11px 12px;
   border-radius: var(--radius-sm);
-  color: var(--text-muted);
+  color: rgba(255,255,255,0.78);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -250,19 +286,19 @@ textarea:focus-visible, a:focus-visible {
   transition: background 0.15s ease, color 0.15s ease;
 }
 .nav-item:hover {
-  background: rgba(255,255,255,0.06);
-  color: var(--text);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
   text-decoration: none;
 }
 .nav-item.active {
-  background: rgba(45, 212, 191, 0.12);
-  color: var(--teal);
+  background: rgba(255,255,255,0.16);
+  color: #fff;
 }
 .nav-item .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--teal);
+  background: var(--mint);
   opacity: 0;
   flex-shrink: 0;
 }
@@ -271,20 +307,46 @@ textarea:focus-visible, a:focus-visible {
 .sidebar-footer {
   margin-top: auto;
   padding-top: 16px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--sidebar-border);
 }
 .sidebar-user {
   font-size: 13px;
-  color: var(--text-muted);
+  color: rgba(255,255,255,0.7);
   margin-bottom: 10px;
 }
 
-/* Compact logout button shown only on mobile */
+/* Theme toggle button */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.theme-toggle:hover {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.35);
+}
+.theme-toggle .theme-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
 .logout-btn-mobile {
   display: none;
-  background: rgba(255,255,255,0.08);
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
   border-radius: var(--radius-sm);
   padding: 8px 14px;
   font-size: 13px;
@@ -293,8 +355,7 @@ textarea:focus-visible, a:focus-visible {
   white-space: nowrap;
 }
 .logout-btn-mobile:hover {
-  border-color: var(--teal);
-  color: var(--teal);
+  border-color: rgba(255,255,255,0.5);
 }
 
 .main-content {
@@ -306,7 +367,6 @@ textarea:focus-visible, a:focus-visible {
 .page-header { margin-bottom: 28px; }
 .page-header p { margin-top: 4px; }
 
-/* ---------- Pulse divider (signature motif) ---------- */
 .pulse-divider {
   width: 100%;
   height: 28px;
@@ -328,8 +388,7 @@ textarea:focus-visible, a:focus-visible {
     top: 0;
     z-index: 10;
     border-right: none;
-    border-bottom: 1px solid var(--border);
-    background: #151A28;
+    border-bottom: 1px solid var(--sidebar-border);
   }
 
   .sidebar-brand {
@@ -356,7 +415,7 @@ textarea:focus-visible, a:focus-visible {
     gap: 4px;
     padding-top: 10px;
     margin-top: 10px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--sidebar-border);
   }
   .nav-item {
     white-space: nowrap;
@@ -370,9 +429,18 @@ textarea:focus-visible, a:focus-visible {
     margin: 0 0 0 12px;
     padding: 0;
     border-top: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
   .sidebar-user { display: none; }
   .sidebar-footer .btn-block { display: none; }
+  .theme-toggle {
+    width: auto;
+    margin-bottom: 0;
+    padding: 8px 10px;
+  }
+  .theme-toggle .theme-label { display: none; }
   .logout-btn-mobile { display: inline-block; }
 
   .main-content { padding: 20px 16px; }

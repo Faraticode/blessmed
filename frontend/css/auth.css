@@ -6,7 +6,7 @@
 
 .auth-hero {
   flex: 1;
-  background: linear-gradient(145deg, #151A28 0%, #0F1A2E 40%, #0D2A28 100%);
+  background: var(--gradient-brand);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -21,11 +21,11 @@
   width: 56px;
   margin-bottom: 24px;
   border-radius: 14px;
-  background: var(--surface-raised);
+  background: rgba(255,255,255,0.15);
   padding: 4px;
 }
 .auth-hero-content h1 { color: #fff; font-size: 30px; margin-bottom: 14px; }
-.auth-hero-content p { color: rgba(255,255,255,0.78); font-size: 15px; }
+.auth-hero-content p { color: rgba(255,255,255,0.82); font-size: 15px; }
 .auth-tagline {
   margin-top: 40px;
   font-family: var(--font-display);
@@ -35,12 +35,11 @@
   color: var(--mint);
 }
 
-/* Decentralized network dot texture */
 .network-texture {
   position: absolute;
   inset: 0;
   z-index: 1;
-  opacity: 0.28;
+  opacity: 0.3;
 }
 
 .auth-panel {
@@ -58,6 +57,31 @@
 .auth-form-wrap h2 { font-size: 24px; color: var(--text); }
 .auth-form-wrap > p { margin-bottom: 26px; color: var(--text-muted); }
 .auth-switch { text-align: center; margin-top: 18px; font-size: 14px; color: var(--text-muted); }
+
+/* Floating theme toggle on auth pages */
+.auth-theme-toggle {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.auth-theme-toggle:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
 
 @media (max-width: 900px) {
   .auth-hero { display: none; }

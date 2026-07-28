@@ -11,6 +11,60 @@ const DEFAULT_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
 `);
 window.DEFAULT_AVATAR = DEFAULT_AVATAR;
 
+/* ---------- Theme management ---------- */
+const Theme = {
+  KEY: 'blessmed_theme',
+
+  get() {
+    return localStorage.getItem(this.KEY) || 'dark';
+  },
+
+  set(theme) {
+    localStorage.setItem(this.KEY, theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    this._updateButtons(theme);
+  },
+
+  toggle() {
+    const next = this.get() === 'dark' ? 'light' : 'dark';
+    this.set(next);
+  },
+
+  // Call as early as possible (and again after sidebar renders)
+  apply() {
+    const theme = this.get();
+    document.documentElement.setAttribute('data-theme', theme);
+    this._updateButtons(theme);
+  },
+
+  _updateButtons(theme) {
+    const isDark = theme === 'dark';
+    const icon = isDark ? '☀️' : '🌙';
+    const label = isDark ? 'Light mode' : 'Dark mode';
+
+    document.querySelectorAll('.theme-toggle').forEach((btn) => {
+      const iconEl = btn.querySelector('.theme-icon');
+      const labelEl = btn.querySelector('.theme-label');
+      if (iconEl) iconEl.textContent = icon;
+      if (labelEl) labelEl.textContent = label;
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+    });
+
+    document.querySelectorAll('.auth-theme-toggle').forEach((btn) => {
+      btn.textContent = icon;
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+    });
+  }
+};
+
+// Apply saved theme immediately (before paint if script is in <head>,
+// otherwise as soon as this file loads).
+Theme.apply();
+window.Theme = Theme;
+
+/* ---------- Sidebar ---------- */
 // Renders the sidebar into #sidebar-root and highlights the active page.
 // Usage: <div id="sidebar-root"></div><script>renderSidebar('dashboard')</script>
 
@@ -37,6 +91,9 @@ function renderSidebar(activePage) {
     .join('');
 
   const avatarSrc = user?.avatarPath ? `/uploads/${user.avatarPath}` : DEFAULT_AVATAR;
+  const currentTheme = Theme.get();
+  const themeIcon = currentTheme === 'dark' ? '☀️' : '🌙';
+  const themeLabel = currentTheme === 'dark' ? 'Light mode' : 'Dark mode';
 
   const root = document.getElementById('sidebar-root');
   root.innerHTML = `
@@ -48,12 +105,17 @@ function renderSidebar(activePage) {
       <nav class="nav-list">${navHtml}</nav>
       <div class="sidebar-footer">
         <div class="sidebar-user">${user ? user.fullName : ''}</div>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="${themeLabel}" title="${themeLabel}">
+          <span class="theme-icon">${themeIcon}</span>
+          <span class="theme-label">${themeLabel}</span>
+        </button>
         <button class="btn btn-secondary btn-block" id="logout-btn">Log out</button>
         <button class="logout-btn-mobile" id="logout-btn-mobile" aria-label="Log out" title="Log out">Log out</button>
       </div>
     </div>
   `;
 
+  document.getElementById('theme-toggle').addEventListener('click', () => Theme.toggle());
   document.getElementById('logout-btn').addEventListener('click', () => Auth.logout());
   document.getElementById('logout-btn-mobile').addEventListener('click', () => Auth.logout());
 }

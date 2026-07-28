@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>(function(){var t=localStorage.getItem("blessmed_theme")||"dark";document.documentElement.setAttribute("data-theme",t);})();</script>
+
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sign up — BlessMed</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=5" />
-<link rel="stylesheet" href="css/auth.css?v=3" />
+<link rel="stylesheet" href="css/style.css?v=6" />
+<link rel="stylesheet" href="css/auth.css?v=4" />
 </head>
 <body>
+
+<button class="auth-theme-toggle" id="auth-theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme">☀️</button>
+
 
 <div class="auth-shell">
   <div class="auth-hero">
@@ -94,5 +99,22 @@
     }
   });
 </script>
+
+<script>
+(function(){
+  var KEY = 'blessmed_theme';
+  function get(){ return localStorage.getItem(KEY) || 'dark'; }
+  function set(t){
+    localStorage.setItem(KEY, t);
+    document.documentElement.setAttribute('data-theme', t);
+    var btn = document.getElementById('auth-theme-toggle');
+    if(btn){ btn.textContent = t === 'dark' ? '☀️' : '🌙'; btn.title = t === 'dark' ? 'Light mode' : 'Dark mode'; }
+  }
+  set(get());
+  var btn = document.getElementById('auth-theme-toggle');
+  if(btn) btn.addEventListener('click', function(){ set(get() === 'dark' ? 'light' : 'dark'); });
+})();
+</script>
+
 </body>
 </html>
