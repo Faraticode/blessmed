@@ -5,7 +5,7 @@
 const PULSE_DIVIDER_SVG = `
 <svg class="pulse-divider" viewBox="0 0 600 28" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
   <polyline points="0,14 220,14 240,4 258,24 276,14 600,14"
-    fill="none" stroke="#17A398" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    fill="none" stroke="#2DD4BF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
 
 function insertPulseDivider(containerId) {

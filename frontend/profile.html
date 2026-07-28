@@ -6,7 +6,7 @@
 <title>Health Profile — BlessMed</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=4" />
+<link rel="stylesheet" href="css/style.css?v=5" />
 <style>
   .form-actions { display: flex; gap: 12px; margin-top: 22px; }
   .tag-input-hint { font-size: 12px; color: var(--text-muted); }
@@ -26,7 +26,7 @@
     <div id="alert-box"></div>
 
     <div class="card" style="display:flex; align-items:center; gap:18px;">
-      <img id="avatar-preview" src="assets/logo.jpg" alt="Profile picture" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:2px solid var(--border);" />
+      <img id="avatar-preview" src="" alt="Profile picture" style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:2px solid var(--border);" onerror="this.onerror=null; this.src=window.DEFAULT_AVATAR;" />
       <div>
         <h3 style="margin-bottom:6px;">Profile picture</h3>
         <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp" />
@@ -112,9 +112,9 @@
   renderSidebar('profile');
 
   const currentUser = Auth.getUser();
-  if (currentUser?.avatarPath) {
-    document.getElementById('avatar-preview').src = `/uploads/${currentUser.avatarPath}`;
-  }
+  document.getElementById('avatar-preview').src = currentUser?.avatarPath
+    ? `/uploads/${currentUser.avatarPath}`
+    : window.DEFAULT_AVATAR;
 
   document.getElementById('avatar-input').addEventListener('change', async (e) => {
     const file = e.target.files[0];

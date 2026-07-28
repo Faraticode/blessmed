@@ -4,9 +4,9 @@
 // Exposed on window so other pages (e.g. profile.html) can reuse the same one.
 const DEFAULT_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72">
-    <circle cx="36" cy="36" r="36" fill="#dbe4ee"/>
-    <circle cx="36" cy="28" r="13" fill="#8fa3b8"/>
-    <path d="M12 62c3-13 14-20 24-20s21 7 24 20" fill="#8fa3b8"/>
+    <circle cx="36" cy="36" r="36" fill="#2A3040"/>
+    <circle cx="36" cy="28" r="13" fill="#6B7385"/>
+    <path d="M12 62c3-13 14-20 24-20s21 7 24 20" fill="#6B7385"/>
   </svg>
 `);
 window.DEFAULT_AVATAR = DEFAULT_AVATAR;
