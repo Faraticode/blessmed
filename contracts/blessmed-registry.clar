@@ -37,7 +37,7 @@
 (define-public (store-record-hash (record-hash (buff 32)))
   (if (map-insert health-records-registry
         { record-hash: record-hash }
-        { owner: tx-sender, registered-at: block-height })
+        { owner: tx-sender, registered-at: stacks-block-height })
       (ok true)
       err-already-registered))
 

@@ -21,7 +21,7 @@ import {
   fetchCallReadOnlyFunction
 } from 'https://esm.sh/@stacks/transactions@7';
 
-const CONTRACT_ADDRESS = 'ST000000000000000000002AMW42H'; // placeholder — replace after deploying
+const CONTRACT_ADDRESS = 'ST1M193TGQK6DZ958F9YT51AD756E6GN26PHS798Q';
 const CONTRACT_NAME = 'blessmed-registry';
 const NETWORK = 'testnet';
 
