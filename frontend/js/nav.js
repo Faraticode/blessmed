@@ -1,3 +1,16 @@
+// Inline placeholder avatar (a generic silhouette) — built as a data URI
+// rather than a separate image file, so it can never go missing or 404
+// the way an uploaded file can. Shown until the user uploads a real photo.
+// Exposed on window so other pages (e.g. profile.html) can reuse the same one.
+const DEFAULT_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72">
+    <circle cx="36" cy="36" r="36" fill="#dbe4ee"/>
+    <circle cx="36" cy="28" r="13" fill="#8fa3b8"/>
+    <path d="M12 62c3-13 14-20 24-20s21 7 24 20" fill="#8fa3b8"/>
+  </svg>
+`);
+window.DEFAULT_AVATAR = DEFAULT_AVATAR;
+
 // Renders the sidebar into #sidebar-root and highlights the active page.
 // Usage: <div id="sidebar-root"></div><script>renderSidebar('dashboard')</script>
 
@@ -23,13 +36,13 @@ function renderSidebar(activePage) {
     )
     .join('');
 
-  const avatarSrc = user?.avatarPath ? `/uploads/${user.avatarPath}` : 'assets/logo.jpg';
+  const avatarSrc = user?.avatarPath ? `/uploads/${user.avatarPath}` : DEFAULT_AVATAR;
 
   const root = document.getElementById('sidebar-root');
   root.innerHTML = `
     <div class="sidebar">
       <div class="sidebar-brand">
-        <img src="${avatarSrc}" alt="Profile picture" />
+        <img src="${avatarSrc}" alt="Profile picture" onerror="this.onerror=null; this.src='${DEFAULT_AVATAR}';" />
         <span>BlessMed</span>
       </div>
       <nav class="nav-list">${navHtml}</nav>
